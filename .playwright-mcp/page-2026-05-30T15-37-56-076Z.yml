@@ -1,0 +1,621 @@
+- application [ref=e2]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img
+        - generic:
+          - heading [level=1]: Transformer
+          - generic: Attention Is All You Need
+          - generic: Vaswani et al., 2017 · NeurIPS
+          - generic: From sequence modeling to attention-based architectures
+        - generic: ▼
+      - generic:
+        - generic:
+          - heading [level=3]: Nội dung
+          - generic:
+            - generic: "1."
+            - generic: Bối cảnh ra đời Transformer
+          - generic:
+            - generic: "2."
+            - generic: Attention trước Transformer
+          - generic:
+            - generic: "3."
+            - generic: Kiến trúc Transformer
+          - generic:
+            - generic: "4."
+            - generic: Training & kết quả thực nghiệm
+          - generic:
+            - generic: "5."
+            - generic: Tác động đến LLM hiện đại
+        - paragraph: "Phần hiện tại: Chương 1"
+    - generic:
+      - generic:
+        - generic: "1."
+        - generic: BỐI CẢNH RA ĐỜI TRANSFORMER
+        - generic: Từ bài toán chuỗi đến giới hạn của RNN/LSTM
+        - generic:
+          - generic: DNN
+          - generic: →
+          - generic: Seq2Seq
+          - generic: →
+          - generic: RNN/LSTM
+          - generic: →
+          - generic: Attention
+          - generic: →
+          - generic: Transformer
+        - generic: ▼
+      - generic:
+        - generic: 2.1 · Bài toán
+        - heading [level=3]: Sequence Transduction
+        - generic: Ánh xạ một chuỗi đầu vào thành một chuỗi đầu ra
+        - img:
+          - generic: I
+          - generic: love
+          - generic: machine
+          - generic: learning
+          - generic: Tôi
+          - generic: yêu
+          - generic: học
+          - generic: máy
+        - list:
+          - listitem:
+            - text: Input / output có
+            - strong: độ dài thay đổi
+          - listitem:
+            - strong: Thứ tự token
+            - text: rất quan trọng
+          - listitem:
+            - strong: Quan hệ xa
+            - text: trong câu cần được giữ lại
+        - generic: "DNN truyền thống không phù hợp: yêu cầu input/output có kích thước cố định, trong khi ngôn ngữ là chuỗi có độ dài biến đổi."
+      - generic [ref=e3]:
+        - generic [ref=e4]: 2.2 · Kiến trúc
+        - 'heading "Seq2Seq: Encoder–Decoder" [level=3] [ref=e5]'
+        - img [ref=e6]:
+          - generic [ref=e8]: x₁
+          - generic [ref=e10]: x₂
+          - generic [ref=e12]: x₃
+          - generic [ref=e14]: x₄
+          - generic [ref=e15]: Input
+          - generic [ref=e18]: Encoder
+          - generic [ref=e20]: c
+          - generic [ref=e22]: Decoder
+          - generic [ref=e24]: y₁
+          - generic [ref=e26]: y₂
+          - generic [ref=e28]: y₃
+          - generic [ref=e29]: Output
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - strong [ref=e32]: ✓
+            - text: Xử lý được chuỗi có độ dài khác nhau
+          - generic [ref=e33]:
+            - strong [ref=e34]: ✗
+            - text: Toàn bộ input bị nén vào một vector cố định
+      - generic:
+        - generic: 2.3 · Recurrent Neural Network
+        - heading [level=3]: RNN
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: h
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: =
+              - generic:
+                - generic: t
+                - generic: a
+                - generic: "n"
+                - generic: h
+              - generic:
+                - generic: (
+              - generic:
+                - generic:
+                  - generic: W
+                - generic:
+                  - generic:
+                    - generic: x
+              - generic:
+                - generic:
+                  - generic: x
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: +
+              - generic:
+                - generic:
+                  - generic: W
+                - generic:
+                  - generic:
+                    - generic: h
+              - generic:
+                - generic:
+                  - generic: h
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: t
+                    - generic:
+                      - generic: −
+                    - generic:
+                      - generic: "1"
+              - generic:
+                - generic: +
+              - generic:
+                - generic: b
+              - generic:
+                - generic: )
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: h
+                    - generic:
+                      - generic:
+                        - generic: t
+                  - generic:
+                    - generic: =
+                  - generic:
+                    - generic: t
+                    - generic: a
+                    - generic: "n"
+                    - generic: h
+                  - generic:
+                    - generic: (
+                  - generic:
+                    - generic:
+                      - generic: W
+                    - generic:
+                      - generic:
+                        - generic: x
+                  - generic:
+                    - generic:
+                      - generic: x
+                    - generic:
+                      - generic:
+                        - generic: t
+                  - generic:
+                    - generic: +
+                  - generic:
+                    - generic:
+                      - generic: W
+                    - generic:
+                      - generic:
+                        - generic: h
+                  - generic:
+                    - generic:
+                      - generic: h
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: t
+                        - generic:
+                          - generic: −
+                        - generic:
+                          - generic: "1"
+                  - generic:
+                    - generic: +
+                  - generic:
+                    - generic: b
+                  - generic:
+                    - generic: )
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: h
+                        - generic:
+                          - generic:
+                            - generic: t
+                      - generic:
+                        - generic: =
+                      - generic:
+                        - generic: t
+                        - generic: a
+                        - generic: "n"
+                        - generic: h
+                      - generic:
+                        - generic: (
+                      - generic:
+                        - generic:
+                          - generic: W
+                        - generic:
+                          - generic:
+                            - generic: x
+                      - generic:
+                        - generic:
+                          - generic: x
+                        - generic:
+                          - generic:
+                            - generic: t
+                      - generic:
+                        - generic: +
+                      - generic:
+                        - generic:
+                          - generic: W
+                        - generic:
+                          - generic:
+                            - generic: h
+                      - generic:
+                        - generic:
+                          - generic: h
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: t
+                            - generic:
+                              - generic: −
+                            - generic:
+                              - generic: "1"
+                      - generic:
+                        - generic: +
+                      - generic:
+                        - generic: b
+                      - generic:
+                        - generic: )
+                    - generic:
+                      - math:
+                        - generic:
+                          - generic: h
+                          - generic: t
+                        - generic: =
+                        - generic: tanh
+                        - generic: (
+                        - generic:
+                          - generic: W
+                          - generic: x
+                        - generic:
+                          - generic: x
+                          - generic: t
+                        - generic: +
+                        - generic:
+                          - generic: W
+                          - generic: h
+                        - generic:
+                          - generic: h
+                          - generic:
+                            - generic: t
+                            - generic: −
+                            - generic: "1"
+                        - generic: +
+                        - generic: b
+                        - generic: )
+        - paragraph:
+          - text: Hidden state
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: h
+                - generic:
+                  - generic:
+                    - generic: t
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: h
+                    - generic:
+                      - generic:
+                        - generic: t
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: h
+                        - generic:
+                          - generic:
+                            - generic: t
+                    - generic:
+                      - math:
+                        - generic:
+                          - generic: h
+                          - generic: t
+          - text: mang thông tin từ các token trước đó
+        - img
+        - generic:
+          - text: Muốn tính
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: h
+                - generic:
+                  - generic:
+                    - generic: t
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: h
+                    - generic:
+                      - generic:
+                        - generic: t
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: h
+                        - generic:
+                          - generic:
+                            - generic: t
+                    - generic:
+                      - math:
+                        - generic:
+                          - generic: h
+                          - generic: t
+          - text: thì
+          - strong: phải chờ
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: h
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: t
+                    - generic:
+                      - generic: −
+                    - generic:
+                      - generic: "1"
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: h
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: t
+                        - generic:
+                          - generic: −
+                        - generic:
+                          - generic: "1"
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: h
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: t
+                            - generic:
+                              - generic: −
+                            - generic:
+                              - generic: "1"
+                    - generic:
+                      - math:
+                        - generic:
+                          - generic: h
+                          - generic:
+                            - generic: t
+                            - generic: −
+                            - generic: "1"
+          - text: — xử lý tuần tự không thể song song hóa.
+      - generic:
+        - generic: 2.4 · Long Short-Term Memory
+        - heading [level=3]: LSTM
+        - generic:
+          - img
+          - generic:
+            - paragraph:
+              - text: Thêm
+              - strong: cell state
+              - text: "và các cổng điều khiển:"
+            - list:
+              - listitem: ▸ Forget gate — quyết định thông tin nào bị loại bỏ
+              - listitem: ▸ Input gate — quyết định thông tin mới nào được thêm vào
+              - listitem: ▸ Output gate — quyết định đầu ra tại bước hiện tại
+            - generic:
+              - text: Giảm
+              - strong: vanishing gradient
+              - text: ", giữ"
+              - strong: long-term dependencies
+              - text: tốt hơn RNN.
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: c
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: =
+              - generic:
+                - generic:
+                  - generic: f
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: ⊙
+              - generic:
+                - generic:
+                  - generic: c
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: t
+                    - generic:
+                      - generic: −
+                    - generic:
+                      - generic: "1"
+              - generic:
+                - generic: +
+              - generic:
+                - generic:
+                  - generic: i
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: ⊙
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: ~
+                    - generic:
+                      - generic:
+                        - generic: c
+                - generic:
+                  - generic:
+                    - generic: t
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: c
+                    - generic:
+                      - generic:
+                        - generic: t
+                  - generic:
+                    - generic: =
+                  - generic:
+                    - generic:
+                      - generic: f
+                    - generic:
+                      - generic:
+                        - generic: t
+                  - generic:
+                    - generic: ⊙
+                  - generic:
+                    - generic:
+                      - generic: c
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: t
+                        - generic:
+                          - generic: −
+                        - generic:
+                          - generic: "1"
+                  - generic:
+                    - generic: +
+                  - generic:
+                    - generic:
+                      - generic: i
+                    - generic:
+                      - generic:
+                        - generic: t
+                  - generic:
+                    - generic: ⊙
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: ~
+                        - generic:
+                          - generic:
+                            - generic: c
+                    - generic:
+                      - generic:
+                        - generic: t
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: c
+                        - generic:
+                          - generic:
+                            - generic: t
+                      - generic:
+                        - generic: =
+                      - generic:
+                        - generic:
+                          - generic: f
+                        - generic:
+                          - generic:
+                            - generic: t
+                      - generic:
+                        - generic: ⊙
+                      - generic:
+                        - generic:
+                          - generic: c
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: t
+                            - generic:
+                              - generic: −
+                            - generic:
+                              - generic: "1"
+                      - generic:
+                        - generic: +
+                      - generic:
+                        - generic:
+                          - generic: i
+                        - generic:
+                          - generic:
+                            - generic: t
+                      - generic:
+                        - generic: ⊙
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: ~
+                            - generic:
+                              - generic:
+                                - generic: c
+                        - generic:
+                          - generic:
+                            - generic: t
+                    - generic:
+                      - math:
+                        - generic:
+                          - generic: c
+                          - generic: t
+                        - generic: =
+                        - generic:
+                          - generic: f
+                          - generic: t
+                        - generic: ⊙
+                        - generic:
+                          - generic: c
+                          - generic:
+                            - generic: t
+                            - generic: −
+                            - generic: "1"
+                        - generic: +
+                        - generic:
+                          - generic: i
+                          - generic: t
+                        - generic: ⊙
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: c
+                              - generic: ~
+                          - generic: t
+        - paragraph: cell state quyết định thông tin nào được giữ lại, quên đi, hoặc cập nhật
+        - generic:
+          - text: LSTM tốt hơn RNN, nhưng
+          - strong: vẫn xử lý tuần tự
+          - text: — chưa giải quyết được vấn đề song song hóa.
+      - text: h t h t h t h t − 1 h t − 1 h t − 1
+  - complementary:
+    - button "previous slide" [ref=e40] [cursor=pointer]
+    - button "above slide" [ref=e42] [cursor=pointer]
+    - button "below slide" [ref=e44] [cursor=pointer]
+  - text: Speaker notes
+  - generic [ref=e48]: "2.2 · Kiến trúc Seq2Seq: Encoder–Decoder x₁ x₂ x₃ x₄ Input Encoder c Decoder y₁ y₂ y₃ Output ✓ Xử lý được chuỗi có độ dài khác nhau ✗ Toàn bộ input bị nén vào một vector cố định"

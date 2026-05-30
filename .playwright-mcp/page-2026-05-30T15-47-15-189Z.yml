@@ -1,0 +1,450 @@
+- application [ref=e2]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img
+        - generic:
+          - heading [level=1]: Transformer
+          - generic: Attention Is All You Need
+          - generic: Vaswani et al., 2017 · NeurIPS
+          - generic: From sequence modeling to attention-based architectures
+        - generic: ▼
+      - generic:
+        - generic:
+          - heading [level=3]: Nội dung
+          - generic:
+            - generic: "1."
+            - generic: Bối cảnh ra đời Transformer
+          - generic:
+            - generic: "2."
+            - generic: Attention trước Transformer
+          - generic:
+            - generic: "3."
+            - generic: Kiến trúc Transformer
+          - generic:
+            - generic: "4."
+            - generic: Training & kết quả thực nghiệm
+          - generic:
+            - generic: "5."
+            - generic: Tác động đến LLM hiện đại
+        - paragraph: "Phần hiện tại: Chương 1"
+    - generic:
+      - generic:
+        - generic: 2.1 · Bài toán
+        - heading [level=3]: Sequence Transduction
+        - generic: Ánh xạ một chuỗi đầu vào thành một chuỗi đầu ra
+        - img:
+          - generic: I
+          - generic: love
+          - generic: machine
+          - generic: learning
+          - generic: Tôi
+          - generic: yêu
+          - generic: học
+          - generic: máy
+        - list:
+          - listitem:
+            - text: Input / output có
+            - strong: độ dài thay đổi
+          - listitem:
+            - strong: Thứ tự token
+            - text: rất quan trọng
+          - listitem:
+            - strong: Quan hệ xa
+            - text: trong câu cần được giữ lại
+        - generic: "DNN truyền thống không phù hợp: yêu cầu input/output có kích thước cố định, trong khi ngôn ngữ là chuỗi có độ dài biến đổi."
+      - generic:
+        - generic: 2.2 · Kiến trúc
+        - heading [level=3]: "Seq2Seq: Encoder–Decoder"
+        - img:
+          - generic: x₁
+          - generic: x₂
+          - generic: x₃
+          - generic: x₄
+          - generic: Input
+          - generic: Encoder
+          - generic: c
+          - generic: Decoder
+          - generic: y₁
+          - generic: y₂
+          - generic: y₃
+          - generic: Output
+        - generic:
+          - generic:
+            - strong: ✓
+            - text: Xử lý được chuỗi có độ dài khác nhau
+          - generic:
+            - strong: ✗
+            - text: Toàn bộ input bị nén vào một vector cố định
+      - generic [ref=e3]:
+        - generic [ref=e4]: 2.3 · Recurrent Neural Network
+        - heading "RNN" [level=3] [ref=e5]
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - generic [ref=e9]:
+              - generic [ref=e11]: h
+              - generic [ref=e14]: t
+            - generic [ref=e16]: =
+            - generic [ref=e17]:
+              - generic [ref=e18]: t
+              - generic [ref=e19]: a
+              - generic [ref=e20]: "n"
+              - generic [ref=e21]: h
+            - generic [ref=e23]: (
+            - generic [ref=e24]:
+              - generic [ref=e26]: W
+              - generic [ref=e29]: x
+            - generic [ref=e30]:
+              - generic [ref=e32]: x
+              - generic [ref=e35]: t
+            - generic [ref=e37]: +
+            - generic [ref=e38]:
+              - generic [ref=e40]: W
+              - generic [ref=e43]: h
+            - generic [ref=e44]:
+              - generic [ref=e46]: h
+              - generic [ref=e48]:
+                - generic [ref=e50]: t
+                - generic [ref=e52]: −
+                - generic [ref=e54]: "1"
+            - generic [ref=e56]: +
+            - generic [ref=e58]: b
+            - generic [ref=e60]: )
+          - math [ref=e62]:
+            - generic [ref=e63]:
+              - generic [ref=e64]: h
+              - generic [ref=e65]: t
+            - generic [ref=e66]: =
+            - generic [ref=e67]: tanh
+            - generic: ⁡
+            - generic [ref=e68]: (
+            - generic [ref=e69]:
+              - generic [ref=e70]: W
+              - generic [ref=e71]: x
+            - generic [ref=e72]:
+              - generic [ref=e73]: x
+              - generic [ref=e74]: t
+            - generic [ref=e75]: +
+            - generic [ref=e76]:
+              - generic [ref=e77]: W
+              - generic [ref=e78]: h
+            - generic [ref=e79]:
+              - generic [ref=e80]: h
+              - generic [ref=e81]:
+                - generic [ref=e82]: t
+                - generic [ref=e83]: −
+                - generic [ref=e84]: "1"
+            - generic [ref=e85]: +
+            - generic [ref=e86]: b
+            - generic [ref=e87]: )
+        - paragraph [ref=e88]:
+          - text: Hidden state
+          - generic [ref=e89]:
+            - generic [ref=e91]:
+              - generic [ref=e93]: h
+              - generic [ref=e96]: t
+            - math [ref=e98]:
+              - generic [ref=e99]:
+                - generic [ref=e100]: h
+                - generic [ref=e101]: t
+          - text: mang thông tin từ các token trước đó
+        - img "Unrolled RNN diagram" [ref=e102]
+        - generic [ref=e103]:
+          - text: Muốn tính
+          - generic [ref=e104]:
+            - generic [ref=e106]:
+              - generic [ref=e108]: h
+              - generic [ref=e111]: t
+            - math [ref=e113]:
+              - generic [ref=e114]:
+                - generic [ref=e115]: h
+                - generic [ref=e116]: t
+          - text: thì
+          - strong [ref=e117]: phải chờ
+          - generic [ref=e118]:
+            - generic [ref=e120]:
+              - generic [ref=e122]: h
+              - generic [ref=e124]:
+                - generic [ref=e126]: t
+                - generic [ref=e128]: −
+                - generic [ref=e130]: "1"
+            - math [ref=e132]:
+              - generic [ref=e133]:
+                - generic [ref=e134]: h
+                - generic [ref=e135]:
+                  - generic [ref=e136]: t
+                  - generic [ref=e137]: −
+                  - generic [ref=e138]: "1"
+          - text: — xử lý tuần tự không thể song song hóa.
+      - generic:
+        - generic: 2.4 · Long Short-Term Memory
+        - heading [level=3]: LSTM
+        - generic:
+          - img
+          - generic:
+            - paragraph:
+              - text: Thêm
+              - strong: cell state
+              - text: "và các cổng điều khiển:"
+            - list:
+              - listitem: ▸ Forget gate — quyết định thông tin nào bị loại bỏ
+              - listitem: ▸ Input gate — quyết định thông tin mới nào được thêm vào
+              - listitem: ▸ Output gate — quyết định đầu ra tại bước hiện tại
+            - generic:
+              - text: Giảm
+              - strong: vanishing gradient
+              - text: ", giữ"
+              - strong: long-term dependencies
+              - text: tốt hơn RNN.
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic: c
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: =
+              - generic:
+                - generic:
+                  - generic: f
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: ⊙
+              - generic:
+                - generic:
+                  - generic: c
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: t
+                    - generic:
+                      - generic: −
+                    - generic:
+                      - generic: "1"
+              - generic:
+                - generic: +
+              - generic:
+                - generic:
+                  - generic: i
+                - generic:
+                  - generic:
+                    - generic: t
+              - generic:
+                - generic: ⊙
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: ~
+                    - generic:
+                      - generic:
+                        - generic: c
+                - generic:
+                  - generic:
+                    - generic: t
+            - generic:
+              - math:
+                - generic:
+                  - generic: c
+                  - generic: t
+                - generic: =
+                - generic:
+                  - generic: f
+                  - generic: t
+                - generic: ⊙
+                - generic:
+                  - generic: c
+                  - generic:
+                    - generic: t
+                    - generic: −
+                    - generic: "1"
+                - generic: +
+                - generic:
+                  - generic: i
+                  - generic: t
+                - generic: ⊙
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: c
+                      - generic: ~
+                  - generic: t
+        - paragraph: cell state quyết định thông tin nào được giữ lại, quên đi, hoặc cập nhật
+        - generic:
+          - text: LSTM tốt hơn RNN, nhưng
+          - strong: vẫn xử lý tuần tự
+          - text: — chưa giải quyết được vấn đề song song hóa.
+      - generic:
+        - generic: 2.5 · Phân tích
+        - heading [level=3]: Giới hạn của RNN / LSTM
+        - table:
+          - rowgroup:
+            - row:
+              - columnheader: Giới hạn
+              - columnheader: Nguyên nhân
+              - columnheader: Hệ quả
+          - rowgroup:
+            - row:
+              - cell: Xử lý tuần tự
+              - cell:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: h
+                      - generic:
+                        - generic:
+                          - generic: t
+                  - generic:
+                    - math:
+                      - generic:
+                        - generic: h
+                        - generic: t
+                - text: phụ thuộc
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: h
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic: t
+                          - generic:
+                            - generic: −
+                          - generic:
+                            - generic: "1"
+                  - generic:
+                    - math:
+                      - generic:
+                        - generic: h
+                        - generic:
+                          - generic: t
+                          - generic: −
+                          - generic: "1"
+              - cell: Khó song song hóa, train chậm
+            - row:
+              - cell: Đường truyền thông tin dài
+              - cell: Token xa phải đi qua nhiều bước
+              - cell: Long-term dependencies suy giảm
+            - row:
+              - cell: Bottleneck context vector
+              - cell: Seq2Seq nén cả câu vào một vector
+              - cell: Câu dài dễ mất thông tin
+            - row:
+              - cell: Vanishing gradient
+              - cell: Gradient qua nhiều bước thời gian
+              - cell: Khó học quan hệ xa trong chuỗi
+            - row:
+              - cell: Khó scale
+              - cell: RNN không tận dụng GPU tốt như attention
+              - cell: Hạn chế khi dữ liệu / model lớn
+        - generic:
+          - text: → Cần một cơ chế cho phép mô hình
+          - strong: nhìn trực tiếp
+          - text: vào các token liên quan, thay vì truyền thông tin từng bước qua chuỗi.
+  - complementary:
+    - button "previous slide" [ref=e144] [cursor=pointer]
+    - button "above slide" [ref=e146] [cursor=pointer]
+    - button "below slide" [ref=e148] [cursor=pointer]
+  - text: Speaker notes
+  - generic [ref=e152]:
+    - text: 2.3 · Recurrent Neural Network RNN
+    - generic [ref=e153]:
+      - generic [ref=e154]:
+        - generic [ref=e155]:
+          - generic [ref=e157]: h
+          - generic [ref=e160]: t
+        - generic [ref=e162]: =
+        - generic [ref=e163]:
+          - generic [ref=e164]: t
+          - generic [ref=e165]: a
+          - generic [ref=e166]: "n"
+          - generic [ref=e167]: h
+        - generic [ref=e169]: (
+        - generic [ref=e170]:
+          - generic [ref=e172]: W
+          - generic [ref=e175]: x
+        - generic [ref=e176]:
+          - generic [ref=e178]: x
+          - generic [ref=e181]: t
+        - generic [ref=e183]: +
+        - generic [ref=e184]:
+          - generic [ref=e186]: W
+          - generic [ref=e189]: h
+        - generic [ref=e190]:
+          - generic [ref=e192]: h
+          - generic [ref=e194]:
+            - generic [ref=e196]: t
+            - generic [ref=e198]: −
+            - generic [ref=e200]: "1"
+        - generic [ref=e202]: +
+        - generic [ref=e204]: b
+        - generic [ref=e206]: )
+      - math [ref=e208]:
+        - generic [ref=e209]:
+          - generic [ref=e210]: h
+          - generic [ref=e211]: t
+        - generic [ref=e212]: =
+        - generic [ref=e213]: tanh
+        - generic: ⁡
+        - generic [ref=e214]: (
+        - generic [ref=e215]:
+          - generic [ref=e216]: W
+          - generic [ref=e217]: x
+        - generic [ref=e218]:
+          - generic [ref=e219]: x
+          - generic [ref=e220]: t
+        - generic [ref=e221]: +
+        - generic [ref=e222]:
+          - generic [ref=e223]: W
+          - generic [ref=e224]: h
+        - generic [ref=e225]:
+          - generic [ref=e226]: h
+          - generic [ref=e227]:
+            - generic [ref=e228]: t
+            - generic [ref=e229]: −
+            - generic [ref=e230]: "1"
+        - generic [ref=e231]: +
+        - generic [ref=e232]: b
+        - generic [ref=e233]: )
+    - text: Hidden state
+    - generic [ref=e234]:
+      - generic [ref=e236]:
+        - generic [ref=e238]: h
+        - generic [ref=e241]: t
+      - math [ref=e243]:
+        - generic [ref=e244]:
+          - generic [ref=e245]: h
+          - generic [ref=e246]: t
+    - text: mang thông tin từ các token trước đó Muốn tính
+    - generic [ref=e247]:
+      - generic [ref=e249]:
+        - generic [ref=e251]: h
+        - generic [ref=e254]: t
+      - math [ref=e256]:
+        - generic [ref=e257]:
+          - generic [ref=e258]: h
+          - generic [ref=e259]: t
+    - text: thì phải chờ
+    - generic [ref=e260]:
+      - generic [ref=e262]:
+        - generic [ref=e264]: h
+        - generic [ref=e266]:
+          - generic [ref=e268]: t
+          - generic [ref=e270]: −
+          - generic [ref=e272]: "1"
+      - math [ref=e274]:
+        - generic [ref=e275]:
+          - generic [ref=e276]: h
+          - generic [ref=e277]:
+            - generic [ref=e278]: t
+            - generic [ref=e279]: −
+            - generic [ref=e280]: "1"
+    - text: — xử lý tuần tự không thể song song hóa.

@@ -3,80 +3,3244 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Transformer — Attention Is All You Need</title>
 
-    <title>Slide Giới Thiệu Khóa Học</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
-    <!-- Nhúng CSS của Reveal.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reset.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
-    
-    <!-- Chọn Theme (Giao diện trắng giống link mẫu) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/white.min.css">
-
-    <!-- Nhúng theme cho phần Code highlight nếu có code lập trình -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/monokai.min.css">
+
+    <style>
+        :root {
+            --c-text: #1a1a2e;
+            --c-muted: #5b6678;
+            --c-accent: #2d5bb9;
+            --c-warm: #c44f1c;
+            --c-good: #166534;
+            --c-weak: #92400e;
+            --c-bg-soft: #f7f5f0;
+            --c-border: #d6d3cc;
+            --c-row-hl: #eef2f8;
+            --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+            --font-body: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+        }
+
+        .reveal {
+            font-family: var(--font-body);
+            color: var(--c-text);
+        }
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: -0.01em;
+            color: var(--c-text);
+        }
+        .reveal h1 { font-size: 2.8em; }
+        .reveal h2 { font-size: 2.0em; }
+        .reveal h3 { font-size: 1.5em; }
+        .reveal h4 { font-size: 1.2em; }
+
+        .reveal .slides > section > section { padding: 30px 40px; }
+
+        /* ========================================
+           Title slide
+           ======================================== */
+        .title-slide {
+            position: relative;
+            overflow: hidden;
+        }
+        .title-slide::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(45,91,185,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 70%, rgba(196,79,28,0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(45,91,185,0.03) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        .title-slide .bg-pattern {
+            position: absolute;
+            inset: 0;
+            opacity: 0.07;
+            pointer-events: none;
+        }
+        .title-slide .title-content {
+            position: relative;
+            z-index: 1;
+        }
+        .title-slide .paper-title {
+            font-family: var(--font-display);
+            font-size: 1.3em;
+            font-weight: 500;
+            color: var(--c-muted);
+            font-style: italic;
+            margin-top: 0.6em;
+        }
+        .title-slide .paper-author {
+            font-size: 0.7em;
+            color: var(--c-muted);
+            margin-top: 1.2em;
+            letter-spacing: 0.04em;
+        }
+        .title-slide .subtitle-line {
+            font-size: 0.65em;
+            color: var(--c-muted);
+            margin-top: 0.8em;
+            font-style: italic;
+        }
+
+        /* ========================================
+           Section divider
+           ======================================== */
+        .section-divider {
+            position: relative;
+        }
+        .section-divider .section-num {
+            font-family: var(--font-display);
+            font-size: 4em;
+            font-weight: 700;
+            color: var(--c-accent);
+            opacity: 0.15;
+            line-height: 1;
+            margin-bottom: -0.3em;
+        }
+        .section-divider .section-title {
+            font-family: var(--font-display);
+            font-size: 2em;
+            font-weight: 600;
+        }
+        .section-divider .section-subtitle {
+            font-size: 0.9em;
+            color: var(--c-muted);
+            margin-top: 0.5em;
+            font-style: italic;
+        }
+        .timeline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-top: 2em;
+            font-size: 0.55em;
+            color: var(--c-muted);
+        }
+        .timeline-item {
+            padding: 6px 14px;
+            border: 1px solid var(--c-border);
+            border-radius: 2px;
+            background: var(--c-bg-soft);
+            white-space: nowrap;
+        }
+        .timeline-arrow {
+            padding: 0 6px;
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+        .timeline-item.highlight {
+            background: var(--c-accent);
+            color: #fff;
+            border-color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* ========================================
+           Table of Contents
+           ======================================== */
+        .toc {
+            text-align: left;
+            max-width: 620px;
+            margin: 0 auto;
+        }
+        .toc h3 {
+            margin-bottom: 0.8em;
+        }
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            padding: 0.45em 0;
+            border-bottom: 1px solid var(--c-border);
+            font-size: 0.85em;
+        }
+        .toc-item .toc-num {
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--c-muted);
+            width: 2em;
+            flex-shrink: 0;
+        }
+        .toc-item .toc-label {
+            flex: 1;
+        }
+        .toc-item.active {
+            background: var(--c-row-hl);
+            border-radius: 4px;
+            padding: 0.45em 0.5em;
+            font-weight: 700;
+        }
+        .toc-item.active .toc-num {
+            color: var(--c-accent);
+        }
+
+        /* ========================================
+           Generic helpers
+           ======================================== */
+        .key-point {
+            margin-top: 1.2em;
+            padding: 0.6em 1em;
+            background: var(--c-row-hl);
+            border-left: 3px solid var(--c-accent);
+            font-size: 0.75em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+        }
+        .callout-good {
+            padding: 0.5em 0.8em;
+            background: #ecfdf5;
+            border-left: 3px solid var(--c-good);
+            font-size: 0.7em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            color: var(--c-good);
+        }
+        .callout-weak {
+            padding: 0.5em 0.8em;
+            background: #fffbeb;
+            border-left: 3px solid var(--c-weak);
+            font-size: 0.7em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            color: var(--c-weak);
+        }
+        .slide-def {
+            font-size: 0.9em;
+            color: var(--c-muted);
+            max-width: 600px;
+            margin: 0 auto 0.8em;
+        }
+        .slide-label {
+            font-size: 0.6em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+        .aligned-stack > section:not(.section-divider) .slide-label,
+        .aligned-stack > section:not(.section-divider) h3,
+        .aligned-stack > section:not(.section-divider) .slide-def,
+        .aligned-stack > section:not(.section-divider) .key-point,
+        .aligned-stack > section:not(.section-divider) .infobox,
+        .aligned-stack > section:not(.section-divider) .note-box,
+        .aligned-stack > section:not(.section-divider) .toy-note,
+        .aligned-stack > section:not(.section-divider) .difficulty-list {
+            width: min(980px, 100%);
+            max-width: min(980px, 100%);
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .aligned-stack > section:not(.section-divider) h3 {
+            margin-top: 0;
+            margin-bottom: 0.35em;
+        }
+
+        /* ========================================
+           Vertical nav hint
+           ======================================== */
+        .nav-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: var(--c-border);
+            animation: pulse-arrow 2.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes pulse-arrow {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 0.9; transform: translateX(-50%) translateY(4px); }
+        }
+
+        /* ========================================
+           Sequence Transduction slide
+           ======================================== */
+        .seq-trans-svg { max-width: 520px; margin: 0 auto; display: block; }
+        .difficulty-list {
+            text-align: left;
+            max-width: 580px;
+            margin: 1em auto 0;
+            font-size: 0.7em;
+            color: var(--c-muted);
+        }
+        .difficulty-list li { margin-bottom: 0.3em; }
+
+        /* ========================================
+           Seq2Seq slide
+           ======================================== */
+        .seq2seq-svg { max-width: 600px; margin: 0 auto; display: block; }
+        .seq2seq-callouts {
+            display: flex;
+            gap: 1.2em;
+            justify-content: center;
+            margin-top: 0.8em;
+            font-size: 0.72em;
+            text-align: left;
+            max-width: 620px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .seq2seq-callouts > div {
+            flex: 1;
+            padding: 0.6em 0.9em;
+            border-radius: 4px;
+        }
+
+        /* ========================================
+           RNN / LSTM slides
+           ======================================== */
+        .rnn-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2em;
+            align-items: start;
+            text-align: left;
+            margin-top: 0.5em;
+        }
+        .rnn-layout .rnn-img {
+            max-height: 210px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
+        }
+        .rnn-layout .rnn-text {
+            font-size: 0.72em;
+            line-height: 1.8;
+        }
+        .rnn-layout .rnn-formula {
+            font-size: 1.2em;
+            margin: 0 0 0.6em 0;
+            text-align: center;
+        }
+
+        /* ========================================
+           Bahdanau Attention section
+           ======================================== */
+        .bottleneck-svg {
+            max-width: 620px;
+            margin: 0 auto;
+            display: block;
+        }
+        .bottleneck-label {
+            font-family: var(--font-body);
+            font-size: 10px;
+            fill: var(--c-warm);
+            text-anchor: middle;
+            font-weight: 700;
+        }
+        .attention-multi-svg {
+            max-width: 520px;
+            margin: 0 auto;
+            display: block;
+        }
+        .formula-2col {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 2em;
+            align-items: start;
+            text-align: left;
+            margin-top: 0.8em;
+        }
+        .formula-2col .formula-block {
+            font-size: 0.85em;
+            text-align: center;
+            padding: 0.5em;
+            background: var(--c-bg-soft);
+            border-radius: 6px;
+            border: 1px solid var(--c-border);
+        }
+        .formula-2col .formula-notes {
+            font-size: 0.60em;
+            line-height: 1.9;
+            color: var(--c-muted);
+        }
+        .formula-2col .formula-notes strong {
+            color: var(--c-text);
+        }
+        .heatmap-table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.68em;
+        }
+        .heatmap-table th, .heatmap-table td {
+            padding: 8px 16px;
+            border: 1px solid var(--c-border);
+            text-align: center;
+        }
+        .heatmap-table th {
+            background: var(--c-accent);
+            color: #fff;
+            font-weight: 700;
+        }
+        .heatmap-table .hi { background: #2d5bb9; color: #fff; }
+        .heatmap-table .lo { background: #e8ecf4; color: var(--c-muted); }
+        .attention-example {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 1em;
+            margin: 1em 0;
+            font-size: 0.7em;
+        }
+        .attention-example .src-token {
+            text-align: center;
+        }
+        .attention-example .src-token .weight {
+            font-size: 0.85em;
+            margin-top: 4px;
+        }
+        .attention-example .src-token .bar {
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 2px;
+        }
+        .compare-table {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.63em;
+        }
+        .compare-table th {
+            padding: 8px 12px;
+            font-weight: 700;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .compare-table th.col-solved {
+            background: #166534;
+            color: #fff;
+        }
+        .compare-table th.col-remain {
+            background: #92400e;
+            color: #fff;
+        }
+        .compare-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid var(--c-border);
+            vertical-align: top;
+        }
+        .compare-table td.col-solved {
+            background: #ecfdf5;
+            color: var(--c-good);
+        }
+        .compare-table td.col-remain {
+            background: #fffbeb;
+            color: var(--c-weak);
+        }
+        .slide-flow-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin-top: 0.5em;
+            font-size: 0.65em;
+            color: var(--c-muted);
+        }
+        .slide-flow-box .flow-arrow {
+            color: var(--c-accent);
+            font-size: 1.2em;
+        }
+        .equation-annotated {
+            margin: 0.5em auto;
+            font-size: 0.62em;
+            color: var(--c-muted);
+            text-align: center;
+            line-height: 1.8;
+            max-width: 600px;
+        }
+
+        /* ========================================
+           Transformer Architecture section
+           ======================================== */
+        .compare-rnn-trans {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2em;
+            margin-top: 1em;
+            text-align: left;
+        }
+        .compare-rnn-trans h4 {
+            text-align: center;
+            margin-bottom: 0.5em;
+        }
+        .compare-rnn-trans .side-rnn {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            padding: 0.8em 1em;
+            font-size: 0.65em;
+        }
+        .compare-rnn-trans .side-trans {
+            background: #ecfdf5;
+            border: 1px solid #86efac;
+            border-radius: 8px;
+            padding: 0.8em 1em;
+            font-size: 0.65em;
+        }
+        .arch-diagram-svg {
+            max-width: 680px;
+            margin: 0 auto;
+            display: block;
+        }
+        .block-diagram-svg {
+            max-width: 560px;
+            margin: 0 auto;
+            display: block;
+        }
+        .data-flow-svg {
+            max-width: 660px;
+            margin: 0 auto;
+            display: block;
+        }
+        .toy-table {
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.55em;
+        }
+        .toy-table th {
+            background: var(--c-accent);
+            color: #fff;
+            padding: 6px 8px;
+            font-weight: 700;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        .toy-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid var(--c-border);
+            text-align: center;
+            font-family: var(--font-body);
+        }
+        .toy-table tr.row-hl {
+            background: var(--c-row-hl);
+        }
+        .toy-note {
+            font-size: 0.45em;
+            color: var(--c-warm);
+            font-style: italic;
+            margin-top: 0.4em;
+            text-align: center;
+        }
+        .encoder-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: 0.58em;
+            margin: 0.6em 0;
+        }
+        .encoder-block .block-item {
+            padding: 6px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--c-border);
+            background: var(--c-bg-soft);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .encoder-block .block-arrow {
+            font-size: 0.8em;
+            color: var(--c-accent);
+        }
+        .mask-matrix {
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.58em;
+        }
+        .mask-matrix td, .mask-matrix th {
+            padding: 6px 12px;
+            text-align: center;
+            border: 1px solid var(--c-border);
+        }
+        .mask-matrix .ok { color: var(--c-good); font-weight: 700; }
+        .mask-matrix .no { color: #d1d5db; }
+        .prob-table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.58em;
+        }
+        .prob-table th {
+            background: var(--c-accent);
+            color: #fff;
+            padding: 6px 14px;
+        }
+        .prob-table td {
+            padding: 5px 14px;
+            border-bottom: 1px solid var(--c-border);
+        }
+        .prob-table tr.best { background: #ecfdf5; font-weight: 700; color: var(--c-good); }
+        .encoder-decoder-compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5em;
+            margin-top: 0.5em;
+            font-size: 0.58em;
+        }
+        .encoder-decoder-compare .col {
+            padding: 0.6em 0.8em;
+            border-radius: 6px;
+            text-align: left;
+        }
+        .encoder-decoder-compare .col-enc {
+            background: #e8ecf4;
+            border: 1px solid #bac4d8;
+        }
+        .encoder-decoder-compare .col-dec {
+            background: #fdf3ec;
+            border: 1px solid #e0c3a8;
+        }
+        .flow-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2em;
+            margin-top: 0.6em;
+            font-size: 0.58em;
+            text-align: left;
+        }
+        .flow-split .flow-col {
+            padding: 0.6em 0.8em;
+            border-radius: 6px;
+        }
+        .flow-split .src-col {
+            background: #e8ecf4;
+            border: 1px solid #bac4d8;
+        }
+        .flow-split .tgt-col {
+            background: #fdf3ec;
+            border: 1px solid #e0c3a8;
+        }
+        .infobox {
+            background: var(--c-bg-soft);
+            border: 1px solid var(--c-border);
+            border-radius: 6px;
+            padding: 0.5em 0.8em;
+            font-size: 0.55em;
+            color: var(--c-muted);
+            margin-top: 0.5em;
+            text-align: left;
+            max-width: 680px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Transformer rebuild: compact visual slides */
+        .transformer-rebuild > section:not(.section-divider) .slide-label,
+        .transformer-rebuild > section:not(.section-divider) h3,
+        .transformer-rebuild > section:not(.section-divider) .slide-def {
+            width: min(980px, 100%);
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .transformer-rebuild h3 {
+            margin: 0 0 0.28em;
+        }
+        .transformer-rebuild .slide-def {
+            font-size: 0.58em;
+            line-height: 1.45;
+            max-width: 980px;
+            margin-bottom: 0.6em;
+        }
+        .t-hero-flow,
+        .t-compare-grid,
+        .t-two-col,
+        .t-three-col,
+        .t-flow-columns {
+            display: grid;
+            gap: 18px;
+            align-items: stretch;
+            width: min(980px, 100%);
+            margin: 0 auto;
+            text-align: left;
+        }
+        .t-compare-grid { grid-template-columns: repeat(3, 1fr); }
+        .t-two-col { grid-template-columns: 0.92fr 1.08fr; }
+        .t-three-col { grid-template-columns: repeat(3, 1fr); }
+        .t-flow-columns { grid-template-columns: 1fr 1fr; }
+        .t-panel {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.72);
+            padding: 14px 16px;
+            box-sizing: border-box;
+        }
+        .t-panel h4 {
+            margin: 0 0 0.45em;
+            font-size: 0.76em;
+            letter-spacing: 0;
+        }
+        .t-panel p,
+        .t-panel li {
+            margin: 0.28em 0;
+            font-size: 0.50em;
+            line-height: 1.48;
+            color: var(--c-muted);
+        }
+        .t-panel ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+        .t-panel strong { color: var(--c-text); }
+        .t-enc {
+            background: #eef4ff;
+            border-color: #9ab2df;
+        }
+        .t-dec {
+            background: #fff2e8;
+            border-color: #deb08f;
+        }
+        .t-cross {
+            background: #fff7d6;
+            border-color: #d5a83d;
+        }
+        .t-good {
+            background: #eef8f1;
+            border-color: #9ccdaa;
+        }
+        .t-warn {
+            background: #fff4ef;
+            border-color: #dda08b;
+        }
+        .t-mini-label {
+            font-size: 0.42em;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--c-muted);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .t-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            margin: 0.45em auto 0;
+            font-size: 0.48em;
+        }
+        .t-chip {
+            border: 1px solid var(--c-border);
+            border-radius: 999px;
+            padding: 5px 10px;
+            background: #fff;
+            white-space: nowrap;
+        }
+        .t-arrow {
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+        .t-flow-svg,
+        .t-wide-svg {
+            display: block;
+            width: min(980px, 100%);
+            height: auto;
+            margin: 0 auto;
+        }
+        .t-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            align-items: stretch;
+            max-width: 350px;
+            margin: 0 auto;
+            font-size: 0.48em;
+        }
+        .t-block {
+            border: 1px solid var(--c-border);
+            border-radius: 7px;
+            background: #fff;
+            padding: 8px 14px;
+            text-align: center;
+            font-weight: 700;
+            color: var(--c-text);
+        }
+        .t-block.enc {
+            background: #dfeaff;
+            border-color: #7f9fd7;
+            color: #1d4f9c;
+        }
+        .t-block.dec {
+            background: #ffe9dc;
+            border-color: #d79565;
+            color: #9b3f16;
+        }
+        .t-block.cross {
+            background: #fff3bd;
+            border-color: #d6a62c;
+            color: #8a6100;
+        }
+        .t-down {
+            text-align: center;
+            font-size: 0.42em;
+            line-height: 1;
+            color: var(--c-accent);
+            margin: -3px 0;
+        }
+        .t-callout {
+            width: min(980px, 100%);
+            margin: 0.72em auto 0;
+            border-left: 4px solid var(--c-accent);
+            background: #eef2f8;
+            border-radius: 0 6px 6px 0;
+            padding: 9px 14px;
+            font-size: 0.52em;
+            line-height: 1.45;
+            text-align: left;
+            color: var(--c-muted);
+            box-sizing: border-box;
+        }
+        .t-formula {
+            width: fit-content;
+            max-width: 900px;
+            margin: 0.35em auto 0.65em;
+            padding: 9px 18px;
+            border: 1px solid #bac4d8;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.66em;
+            color: var(--c-text);
+        }
+        .t-formula-strip {
+            width: min(980px, 100%);
+            margin: 0.2em auto 0.55em;
+            padding: 8px 14px;
+            border: 1px solid #bac4d8;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.50em;
+            text-align: left;
+            color: var(--c-muted);
+            box-sizing: border-box;
+        }
+        .t-formula-strip strong {
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+        .t-heatmap {
+            border-collapse: separate;
+            border-spacing: 4px;
+            margin: 0 auto;
+            font-size: 0.42em;
+        }
+        .t-heatmap th {
+            color: var(--c-muted);
+            font-weight: 700;
+            padding: 4px 6px;
+        }
+        .t-heatmap td {
+            min-width: 48px;
+            height: 36px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 700;
+            color: #10213d;
+            border: 1px solid rgba(26,26,46,0.08);
+        }
+        .t-h0 { background: #eef2f8; color: #6b7280; }
+        .t-h1 { background: #d8e3f7; }
+        .t-h2 { background: #aebfe8; }
+        .t-h3 { background: #6f91d5; color: #fff !important; }
+        .t-h4 { background: #2d5bb9; color: #fff !important; }
+        .t-mask-table {
+            border-collapse: separate;
+            border-spacing: 5px;
+            margin: 0 auto;
+            font-size: 0.42em;
+        }
+        .t-mask-table th {
+            color: var(--c-muted);
+            font-weight: 700;
+            padding: 3px 5px;
+        }
+        .t-mask-table td {
+            width: 62px;
+            height: 38px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 700;
+            border: 1px solid rgba(26,26,46,0.08);
+        }
+        .t-ok {
+            background: #eaf7ee;
+            color: #166534;
+        }
+        .t-no {
+            background: #eef0f4;
+            color: #a3aab6;
+        }
+        .t-stepper {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            width: min(980px, 100%);
+            margin: 0.25em auto 0.55em;
+        }
+        .t-step {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 9px 8px;
+            min-height: 82px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .t-step b {
+            display: block;
+            font-size: 0.48em;
+            color: var(--c-text);
+            margin-bottom: 4px;
+        }
+        .t-step span {
+            display: block;
+            font-size: 0.38em;
+            color: var(--c-muted);
+            line-height: 1.35;
+        }
+        .t-head-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: min(760px, 100%);
+            margin: 0 auto;
+        }
+        .t-head {
+            border-radius: 8px;
+            border: 1px solid #9ab2df;
+            background: #eef4ff;
+            padding: 10px 8px;
+            text-align: center;
+            min-height: 72px;
+            box-sizing: border-box;
+        }
+        .t-head b {
+            display: block;
+            font-size: 0.48em;
+            color: #1d4f9c;
+        }
+        .t-head span {
+            display: block;
+            font-size: 0.36em;
+            line-height: 1.35;
+            color: var(--c-muted);
+            margin-top: 4px;
+        }
+        .t-token-line {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 0.25em auto 0.6em;
+        }
+        .t-token {
+            border: 1px solid var(--c-border);
+            border-radius: 6px;
+            padding: 7px 11px;
+            background: #fff;
+            font-size: 0.48em;
+            font-weight: 700;
+        }
+        .t-token.hot {
+            background: #fef3c7;
+            border-color: #d97706;
+            color: #92400e;
+        }
+        .t-compact-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            width: min(980px, 100%);
+            margin: 0 auto;
+            text-align: left;
+        }
+        .t-numbered-flow {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            width: min(980px, 100%);
+            margin: 0.4em auto 0;
+        }
+        .t-numbered-flow .t-step {
+            min-height: 70px;
+            position: relative;
+        }
+        .t-step-num {
+            display: inline-grid;
+            place-items: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--c-accent);
+            color: #fff;
+            font-size: 0.72em;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .t-mini-equation {
+            width: min(900px, 100%);
+            margin: 0.35em auto;
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px 14px;
+            text-align: center;
+            font-size: 0.56em;
+            color: var(--c-text);
+            box-sizing: border-box;
+        }
+        .t-vector-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: stretch;
+            margin: 0.45em auto;
+        }
+        .t-vector-card {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px 12px;
+            min-width: 170px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .t-vector-card b {
+            display: block;
+            font-size: 0.48em;
+            color: var(--c-text);
+            margin-bottom: 4px;
+        }
+        .t-vector-card span {
+            display: block;
+            font-size: 0.38em;
+            line-height: 1.35;
+            color: var(--c-muted);
+        }
+        .t-prob-bars {
+            width: min(560px, 100%);
+            margin: 0.35em auto;
+            display: grid;
+            gap: 8px;
+            font-size: 0.48em;
+        }
+        .t-prob-row {
+            display: grid;
+            grid-template-columns: 72px 1fr 46px;
+            align-items: center;
+            gap: 10px;
+        }
+        .t-prob-track {
+            height: 18px;
+            border-radius: 999px;
+            background: #e8ecf4;
+            overflow: hidden;
+        }
+        .t-prob-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--c-accent);
+        }
+        .t-prob-row.best .t-prob-fill {
+            background: var(--c-good);
+        }
+        .t-softmax-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            width: min(920px, 100%);
+            margin: 0 auto;
+        }
+        .t-score-card {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            padding: 12px;
+            background: #fff;
+            text-align: center;
+        }
+        .t-score-card h4 {
+            margin-bottom: 0.4em;
+        }
+        .t-score-card .t-prob-bars {
+            width: 100%;
+        }
+        .t-heatmap .focus-row th,
+        .t-heatmap .focus-row td {
+            outline: 2px solid #c44f1c;
+            outline-offset: 1px;
+        }
+        .t-pos-badge {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 2px 5px;
+            border-radius: 999px;
+            background: #eef2f8;
+            color: var(--c-muted);
+            font-size: 0.72em;
+            vertical-align: middle;
+        }
+        .t-tiny-note {
+            margin-top: 0.4em;
+            font-size: 0.40em;
+            color: var(--c-muted);
+            text-align: center;
+        }
+
+        /* Training / Results / Impact sections */
+        .post-transformer h3 {
+            width: min(980px, 100%);
+            margin: 0 auto 0.35em;
+            text-align: left;
+        }
+        .post-transformer .slide-def,
+        .post-transformer .slide-label {
+            width: min(980px, 100%);
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .post-transformer .slide-def {
+            font-size: 0.58em;
+            line-height: 1.45;
+            margin-bottom: 0.65em;
+            color: var(--c-muted);
+        }
+        .pt-grid-2,
+        .pt-grid-3,
+        .pt-grid-4 {
+            display: grid;
+            gap: 16px;
+            width: min(980px, 100%);
+            margin: 0 auto;
+            text-align: left;
+            align-items: stretch;
+        }
+        .pt-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .pt-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .pt-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .pt-card {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.78);
+            padding: 14px 16px;
+            box-sizing: border-box;
+        }
+        .pt-card h4 {
+            margin: 0 0 0.45em;
+            font-size: 0.72em;
+        }
+        .pt-card p,
+        .pt-card li {
+            margin: 0.25em 0;
+            font-size: 0.48em;
+            line-height: 1.48;
+            color: var(--c-muted);
+        }
+        .pt-card ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+        .pt-card strong {
+            color: var(--c-text);
+        }
+        .pt-blue {
+            background: #eef4ff;
+            border-color: #9ab2df;
+        }
+        .pt-orange {
+            background: #fff2e8;
+            border-color: #deb08f;
+        }
+        .pt-green {
+            background: #eef8f1;
+            border-color: #9ccdaa;
+        }
+        .pt-yellow {
+            background: #fff7d6;
+            border-color: #d5a83d;
+        }
+        .pt-score {
+            text-align: center;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .pt-score .num {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 2.0em;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--c-accent);
+        }
+        .pt-score .caption {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.48em;
+            line-height: 1.35;
+            color: var(--c-muted);
+        }
+        .pt-flow {
+            width: min(980px, 100%);
+            margin: 0.35em auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 0.50em;
+        }
+        .pt-flow .box {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 9px 14px;
+            font-weight: 700;
+            color: var(--c-text);
+        }
+        .pt-flow .arrow {
+            color: var(--c-accent);
+            font-weight: 700;
+            font-size: 1.2em;
+        }
+        .pt-callout {
+            width: min(980px, 100%);
+            margin: 0.75em auto 0;
+            border-left: 4px solid var(--c-accent);
+            background: #eef2f8;
+            border-radius: 0 6px 6px 0;
+            padding: 9px 14px;
+            font-size: 0.50em;
+            line-height: 1.45;
+            color: var(--c-muted);
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .pt-mini-label {
+            font-size: 0.40em;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--c-muted);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .pt-token-row {
+            display: grid;
+            grid-template-columns: 150px repeat(4, 1fr);
+            gap: 8px;
+            align-items: center;
+            width: min(880px, 100%);
+            margin: 0.35em auto;
+            font-size: 0.48em;
+        }
+        .pt-token-row .label {
+            color: var(--c-muted);
+            font-weight: 700;
+            text-align: right;
+        }
+        .pt-token {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 8px 10px;
+            text-align: center;
+            font-weight: 700;
+            min-height: 22px;
+        }
+        .pt-token.out {
+            background: #ecfdf5;
+            border-color: #86efac;
+            color: var(--c-good);
+        }
+        .pt-formula {
+            width: min(980px, 100%);
+            margin: 0.55em auto;
+            padding: 10px 14px;
+            border: 1px solid #bac4d8;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.55em;
+            color: var(--c-text);
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .pt-lr-svg,
+        .pt-wide-svg {
+            display: block;
+            width: min(980px, 100%);
+            height: auto;
+            margin: 0 auto;
+        }
+        .pt-table {
+            width: min(980px, 100%);
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.48em;
+            text-align: left;
+        }
+        .pt-table th {
+            background: var(--c-accent);
+            color: #fff;
+            padding: 8px 10px;
+            font-weight: 700;
+        }
+        .pt-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--c-border);
+            color: var(--c-muted);
+            vertical-align: top;
+        }
+        .pt-table tr.hl td {
+            background: #fff7d6;
+            color: var(--c-text);
+            font-weight: 700;
+        }
+        .pt-paper-table {
+            width: min(1040px, 100%);
+            font-size: 0.36em;
+            line-height: 1.22;
+        }
+        .pt-paper-table th {
+            text-align: center;
+            padding: 6px 8px;
+        }
+        .pt-paper-table td {
+            padding: 5px 8px;
+            white-space: nowrap;
+        }
+        .pt-paper-table td:first-child {
+            white-space: normal;
+            color: var(--c-text);
+            font-weight: 600;
+        }
+        .pt-paper-table td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: var(--c-text);
+        }
+        .pt-paper-table tr.group-sep td {
+            border-top: 2px solid #9aa7bb;
+        }
+        .pt-paper-table tr.transformer td {
+            background: #eef4ff;
+            color: var(--c-text);
+            font-weight: 800;
+        }
+        .pt-paper-caption {
+            width: min(980px, 100%);
+            max-width: min(980px, 100%);
+            margin: 0 auto 0.55em;
+            font-size: 0.44em;
+            line-height: 1.35;
+            color: var(--c-muted);
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .pt-prob-list {
+            display: grid;
+            gap: 7px;
+            font-size: 0.48em;
+        }
+        .pt-prob-row {
+            display: grid;
+            grid-template-columns: 72px 1fr 46px;
+            align-items: center;
+            gap: 8px;
+        }
+        .pt-prob-track {
+            height: 17px;
+            border-radius: 999px;
+            background: #e8ecf4;
+            overflow: hidden;
+        }
+        .pt-prob-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--c-accent);
+        }
+        .pt-matrix-row {
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            gap: 20px;
+            width: min(980px, 100%);
+            margin: 0.3em auto 0;
+        }
+        .pt-grid-icon {
+            display: grid;
+            grid-template-columns: repeat(var(--n), 12px);
+            grid-template-rows: repeat(var(--n), 12px);
+            gap: 2px;
+            padding: 8px;
+            border-radius: 8px;
+            background: #fff;
+            border: 1px solid var(--c-border);
+        }
+        .pt-grid-icon span {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            background: #9ab2df;
+        }
+        .pt-grid-icon.large span {
+            background: #c44f1c;
+        }
+        .lstm-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2em;
+            align-items: start;
+            text-align: left;
+        }
+        .lstm-layout img {
+            max-height: 340px;
+            width: auto;
+            display: block;
+            margin-left: auto;
+        }
+        .lstm-layout .lstm-text {
+            font-size: 0.72em;
+            line-height: 1.8;
+        }
+        .lstm-layout .lstm-text ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .lstm-layout .lstm-text li::before {
+            content: '▸ ';
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+        .lstm-formula-block {
+            margin-top: 0.8em;
+            font-size: 1.0em;
+            text-align: center;
+        }
+
+        /* ========================================
+           Limitations table
+           ======================================== */
+        .limit-table {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 0.63em;
+        }
+        .limit-table th {
+            background: var(--c-accent);
+            color: #fff;
+            padding: 8px 12px;
+            font-weight: 700;
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .limit-table td {
+            padding: 7px 12px;
+            border-bottom: 1px solid var(--c-border);
+            vertical-align: top;
+        }
+        .limit-table tr.row-hl {
+            background: var(--c-row-hl);
+        }
+        .limit-table .col-lim {
+            font-weight: 700;
+            width: 22%;
+            color: var(--c-text);
+        }
+        .limit-table .col-cause {
+            width: 38%;
+            color: var(--c-muted);
+        }
+        .limit-table .col-effect {
+            width: 40%;
+            color: var(--c-weak);
+        }
+        .slide-conclusion {
+            margin-top: 1em;
+            font-size: 0.7em;
+            font-style: italic;
+            color: var(--c-accent);
+            max-width: 760px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ========================================
+           Bridge / Attention slide
+           ======================================== */
+        .bridge-svg {
+            max-width: 480px;
+            margin: 0 auto;
+            display: block;
+        }
+        .bridge-question {
+            font-family: var(--font-display);
+            font-size: 1.1em;
+            font-weight: 500;
+            color: var(--c-accent);
+            margin: 0.6em 0;
+            font-style: italic;
+        }
+        .bridge-sub {
+            font-size: 0.75em;
+            color: var(--c-muted);
+            margin-bottom: 1em;
+        }
+
+        /* ========================================
+           SVG diagram shared styles
+           ======================================== */
+        .diagram-box {
+            fill: var(--c-bg-soft);
+            stroke: var(--c-border);
+            stroke-width: 1;
+        }
+        .diagram-text {
+            font-family: var(--font-body);
+            font-size: 13px;
+            fill: var(--c-text);
+            text-anchor: middle;
+        }
+        .diagram-text-sm {
+            font-family: var(--font-body);
+            font-size: 11px;
+            fill: var(--c-muted);
+            text-anchor: middle;
+        }
+        .diagram-arrow {
+            stroke: var(--c-accent);
+            stroke-width: 1.5;
+            fill: none;
+        }
+    </style>
 </head>
 <body>
     <div class="reveal">
         <div class="slides">
 
-            <!-- SLIDE 1: Slide Tiêu Đề -->
-            <section>
-                <h2>Machine Learning Course</h2>
-                <p style="color: grey;">Lecture 01a: Course Introduction</p>
-                <p><small>Giảng viên: Nguyễn Văn A</small></p>
-            </section>
+<!-- ================================================================
+     VERTICAL STACK 1: Title → Mục lục
+     ================================================================ -->
+<section>
 
-            <!-- SLIDE 2: Chuyển slide theo chiều ngang -->
-            <section>
-                <h3>1. Mục tiêu khóa học</h3>
-                <ul>
-                    <li>Cung cấp kiến thức nền tảng về AI/ML.</li>
-                    <li>Thực hành các thuật toán kinh điển bằng Python.</li>
-                    <li>Triển khai bài toán thực tế.</li>
-                </ul>
-            </section>
+<!-- ================================================================
+     SLIDE 1: Title (first vertical child)
+     ================================================================ -->
+<section class="title-slide" data-background-color="#faf8f5">
+    <div class="bg-pattern">
+        <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="blur-bg"><feGaussianBlur stdDeviation="40"/></filter>
+            </defs>
+            <!-- Abstract attention-like connecting lines -->
+            <g filter="url(#blur-bg)" opacity="0.6">
+                <circle cx="200" cy="180" r="5" fill="var(--c-accent)"/>
+                <circle cx="600" cy="150" r="4" fill="var(--c-accent)"/>
+                <circle cx="350" cy="380" r="5" fill="var(--c-accent)"/>
+                <circle cx="550" cy="420" r="4" fill="var(--c-accent)"/>
+                <circle cx="150" cy="450" r="3" fill="var(--c-accent)"/>
+                <circle cx="680" cy="300" r="4" fill="var(--c-accent)"/>
+                <line x1="200" y1="180" x2="600" y2="150" stroke="var(--c-accent)" stroke-width="0.8" opacity="0.5"/>
+                <line x1="200" y1="180" x2="350" y2="380" stroke="var(--c-accent)" stroke-width="0.6" opacity="0.4"/>
+                <line x1="600" y1="150" x2="550" y2="420" stroke="var(--c-accent)" stroke-width="0.6" opacity="0.4"/>
+                <line x1="350" y1="380" x2="150" y2="450" stroke="var(--c-accent)" stroke-width="0.5" opacity="0.35"/>
+                <line x1="350" y1="380" x2="680" y2="300" stroke="var(--c-accent)" stroke-width="0.7" opacity="0.45"/>
+                <line x1="550" y1="420" x2="680" y2="300" stroke="var(--c-accent)" stroke-width="0.5" opacity="0.35"/>
+                <line x1="200" y1="180" x2="680" y2="300" stroke="var(--c-warm)" stroke-width="0.9" opacity="0.35"/>
+                <line x1="150" y1="450" x2="550" y2="420" stroke="var(--c-warm)" stroke-width="0.7" opacity="0.3"/>
+            </g>
+        </svg>
+    </div>
+    <div class="title-content">
+        <h1 style="font-size: 3.6em; margin-bottom: 0;">Transformer</h1>
+        <div class="paper-title">Attention Is All You Need</div>
+        <div class="paper-author">Vaswani et al., 2017 &middot; NeurIPS</div>
+        <div class="subtitle-line">From sequence modeling to attention-based architectures</div>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
 
-            <!-- SLIDE 3: Slide lồng nhau (Bấm nút XUỐNG để xem) -->
-            <section>
-                <section>
-                    <h3>2. Nội dung chi tiết</h3>
-                    <p>Slide này có nội dung phụ bên dưới (Bấm mũi tên đi xuống 👇)</p>
-                </section>
-                <section>
-                    <h4>Tuần 1: Linear Regression</h4>
-                    <p>Tìm hiểu về hồi quy tuyến tính và Gradient Descent.</p>
-                </section>
-                <section>
-                    <h4>Tuần 2: Logistic Regression</h4>
-                    <p>Bài toán phân loại (Classification).</p>
-                </section>
-            </section>
+<!-- ================================================================
+     SLIDE 1.1: Mục lục (second vertical child)
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="toc">
+        <h3 style="text-align: center; margin-bottom: 0.6em;">Nội dung</h3>
+        <div class="toc-item active">
+            <span class="toc-num">1.</span>
+            <span class="toc-label">Bối cảnh ra đời Transformer</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">2.</span>
+            <span class="toc-label">Attention trước Transformer</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">3.</span>
+            <span class="toc-label">Kiến trúc Transformer</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">4.</span>
+            <span class="toc-label">Training &amp; kết quả thực nghiệm</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">5.</span>
+            <span class="toc-label">Tác động đến LLM hiện đại</span>
+        </div>
+    </div>
+    <p style="margin-top: 1.5em; font-size: 0.6em; color: var(--c-muted);">Phần hiện tại: <span style="color: var(--c-accent); font-weight: 700;">Chương 1</span></p>
+</section>
 
-            <!-- SLIDE 4: Hiển thị code lập trình -->
-            <section>
-                <h3>Ví dụ code Python</h3>
-                <pre><code class="language-python" data-trim data-line-numbers>
-import numpy as np
+</section>
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-                </code></pre>
-            </section>
+<!-- ================================================================
+     VERTICAL STACK 2: Section divider → 6 content slides
+     ================================================================ -->
+<section class="aligned-stack">
 
-            <!-- SLIDE 5: Viết công thức toán học dạng LaTeX giống link mẫu -->
-            <section>
-                <h3>Hàm lỗi (Loss Function)</h3>
-                <p>Công thức Mean Squared Error (MSE):</p>
-                <div style="font-size: 1.2em; padding: 20px;">
-                    $$J(\theta) = \frac{1}{2m} \sum_{i=1}^{m} (h_\theta(x^{(i)}) - y^{(i)})^2$$
-                </div>
-            </section>
+<!-- ================================================================
+     SLIDE 2: Section divider (first vertical child)
+     ================================================================ -->
+<section class="section-divider" data-background-color="#faf8f5">
+    <div class="section-num">1.</div>
+    <div class="section-title">BỐI CẢNH RA ĐỜI<br>TRANSFORMER</div>
+    <div class="section-subtitle">Từ bài toán chuỗi đến giới hạn của RNN/LSTM</div>
 
+    <div class="timeline">
+        <span class="timeline-item">DNN</span>
+        <span class="timeline-arrow">→</span>
+        <span class="timeline-item">Seq2Seq</span>
+        <span class="timeline-arrow">→</span>
+        <span class="timeline-item">RNN/LSTM</span>
+        <span class="timeline-arrow">→</span>
+        <span class="timeline-item highlight">Attention</span>
+        <span class="timeline-arrow">→</span>
+        <span class="timeline-item highlight">Transformer</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- ================================================================
+     SLIDE 2.1: Bài toán Sequence Transduction (vertical child)
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">2.1 &middot; Bài toán</div>
+    <h3>Sequence Transduction</h3>
+    <div class="slide-def">Ánh xạ một chuỗi đầu vào thành một chuỗi đầu ra</div>
+
+    <svg class="seq-trans-svg" viewBox="0 0 480 130" xmlns="http://www.w3.org/2000/svg">
+        <!-- Input tokens -->
+        <rect x="28"  y="12" width="86" height="32" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="71"  y="33" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">I</text>
+        <rect x="122" y="12" width="86" height="32" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="165" y="33" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">love</text>
+        <rect x="216" y="12" width="86" height="32" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="259" y="33" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">machine</text>
+        <rect x="310" y="12" width="86" height="32" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="353" y="33" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">learning</text>
+
+        <!-- Arrows -->
+        <line x1="71"  y1="46" x2="71"  y2="68" stroke="#2d5bb9" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+        <line x1="165" y1="46" x2="165" y2="68" stroke="#2d5bb9" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+        <line x1="259" y1="46" x2="259" y2="68" stroke="#2d5bb9" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+        <line x1="353" y1="46" x2="353" y2="68" stroke="#2d5bb9" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+
+        <!-- Output tokens -->
+        <rect x="28"  y="72" width="86" height="32" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="71"  y="93" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">Tôi</text>
+        <rect x="122" y="72" width="86" height="32" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="165" y="93" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">yêu</text>
+        <rect x="216" y="72" width="86" height="32" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="259" y="93" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">học</text>
+        <rect x="310" y="72" width="86" height="32" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="353" y="93" font-family="var(--font-body)" font-size="12" fill="#1a1a2e" text-anchor="middle">máy</text>
+
+        <defs><marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2d5bb9"/></marker></defs>
+    </svg>
+
+    <ul class="difficulty-list">
+        <li>Input / output có <strong>độ dài thay đổi</strong></li>
+        <li><strong>Thứ tự token</strong> rất quan trọng</li>
+        <li><strong>Quan hệ xa</strong> trong câu cần được giữ lại</li>
+    </ul>
+
+    <div class="key-point">DNN truyền thống không phù hợp: yêu cầu input/output có kích thước cố định, trong khi ngôn ngữ là chuỗi có độ dài biến đổi.</div>
+
+    <aside class="notes">
+        Sequence transduction là bài toán nền tảng trong NLP: dịch máy, tóm tắt văn bản, nhận dạng giọng nói, chatbot.
+        Ví dụ khác: English → French, text → speech, câu hỏi → câu trả lời.
+        Điểm chung: input và output đều là chuỗi, nhưng không nhất thiết cùng độ dài.
+        DNN feed-forward truyền thống (MLP) yêu cầu vector input cố định — không phù hợp với dữ liệu chuỗi.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 2.2: Seq2Seq ra đời (vertical child of Slide 2)
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">2.2 &middot; Kiến trúc</div>
+    <h3>Seq2Seq: Encoder&ndash;Decoder</h3>
+
+    <svg class="seq2seq-svg" viewBox="0 0 580 160" xmlns="http://www.w3.org/2000/svg">
+        <!-- Input tokens row -->
+        <rect x="10"  y="16" width="48" height="28" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="34"  y="35" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₁</text>
+        <rect x="62"  y="16" width="48" height="28" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="86"  y="35" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₂</text>
+        <rect x="114" y="16" width="48" height="28" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="138" y="35" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₃</text>
+        <rect x="166" y="16" width="48" height="28" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="190" y="35" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₄</text>
+        <text x="227" y="35" font-family="var(--font-body)" font-size="11" fill="#5b6678">Input</text>
+
+        <!-- Arrow input → encoder -->
+        <line x1="162" y1="46" x2="162" y2="62" stroke="#2d5bb9" stroke-width="1.4" marker-end="url(#ar2)"/>
+
+        <!-- Encoder box -->
+        <rect x="100" y="20" width="120" height="22" rx="6" fill="#2d5bb9" opacity="0" />
+        <rect x="100" y="64" width="120" height="40" rx="6" fill="#dce3f2" stroke="#2d5bb9" stroke-width="1.2"/>
+        <text x="160" y="88" font-family="var(--font-display)" font-size="13" font-weight="600" fill="#2d5bb9" text-anchor="middle">Encoder</text>
+
+        <!-- Arrow encoder → context -->
+        <line x1="222" y1="84" x2="264" y2="84" stroke="#2d5bb9" stroke-width="1.4" marker-end="url(#ar2)"/>
+
+        <!-- Context vector -->
+        <rect x="266" y="66" width="62" height="36" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.2"/>
+        <text x="297" y="88" font-family="var(--font-body)" font-size="14" font-weight="700" fill="#92400e" text-anchor="middle">c</text>
+
+        <!-- Arrow context → decoder -->
+        <line x1="330" y1="84" x2="372" y2="84" stroke="#2d5bb9" stroke-width="1.4" marker-end="url(#ar2)"/>
+
+        <!-- Decoder box -->
+        <rect x="374" y="64" width="120" height="40" rx="6" fill="#fdf3ec" stroke="#c44f1c" stroke-width="1.2"/>
+        <text x="434" y="88" font-family="var(--font-display)" font-size="13" font-weight="600" fill="#c44f1c" text-anchor="middle">Decoder</text>
+
+        <!-- Arrow decoder → output -->
+        <line x1="434" y1="106" x2="434" y2="120" stroke="#2d5bb9" stroke-width="1.4" marker-end="url(#ar2)"/>
+
+        <!-- Output tokens row -->
+        <rect x="374" y="122" width="48" height="28" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="398" y="141" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₁</text>
+        <rect x="426" y="122" width="48" height="28" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="450" y="141" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₂</text>
+        <rect x="478" y="122" width="48" height="28" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="502" y="141" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₃</text>
+        <text x="540" y="141" font-family="var(--font-body)" font-size="11" fill="#5b6678">Output</text>
+
+        <defs><marker id="ar2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2d5bb9"/></marker></defs>
+    </svg>
+
+    <div class="seq2seq-callouts">
+        <div class="callout-good">
+            <strong>✓</strong> Xử lý được chuỗi có độ dài khác nhau
+        </div>
+        <div class="callout-weak">
+            <strong>✗</strong> Toàn bộ input bị nén vào một vector cố định
         </div>
     </div>
 
-    <!-- Nhúng JS của Reveal.js và các Plugin cần thiết -->
+    <aside class="notes">
+        Encoder: đọc từng token đầu vào (thường dùng RNN), tạo ra context vector c — vector duy nhất đại diện cho toàn bộ câu input.
+        Decoder: từ vector c, sinh từng token đầu ra, token sau phụ thuộc token trước (autoregressive).
+        Ưu điểm: giải quyết được vấn đề input/output có độ dài khác nhau.
+        Nhược điểm chính: bottleneck — context vector c có kích thước cố định, không thể chứa đầy đủ thông tin của câu dài. Đây là một trong những động lực chính dẫn đến attention.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 2.3: RNN (vertical child of Slide 2)
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">2.3 &middot; Recurrent Neural Network</div>
+    <h3>RNN</h3>
+
+    <div class="rnn-layout">
+        <img class="rnn-img" src="img/unrolled-rnn.png" alt="Unrolled RNN diagram">
+        <div class="rnn-text">
+            <div class="rnn-formula">$$ h_t = f_W(h_{t-1}, x_t) $$</div>
+            <p style="color: var(--c-muted); margin-top: 0;">Hidden state \(h_t\) mang thông tin từ các token trước đó.</p>
+            <p style="color: var(--c-muted); margin-top: 0.6em;">Tại mỗi bước \(t\), mạng nhận input \(x_t\) và hidden state trước đó \(h_{t-1}\) để tính \(h_t\) mới.</p>
+        </div>
+    </div>
+
+    <div class="key-point">Muốn tính \(h_t\) thì <strong>phải chờ</strong> \(h_{t-1}\) &mdash; xử lý tuần tự không thể song song hóa.</div>
+
+    <aside class="notes">
+        RNN là bước tiến lớn: lần đầu tiên mô hình có thể xử lý chuỗi bằng cách duy trì trạng thái ẩn (hidden state).
+        h_t phụ thuộc vào h_{t-1} và x_t hiện tại — đây là cơ chế "nhớ".
+        Công thức đơn giản nhưng mạnh mẽ: tanh là hàm kích hoạt phi tuyến, W_x và W_h là ma trận trọng số học được.
+        Vấn đề: khi chuỗi dài, gradient qua nhiều bước thời gian bị suy giảm (vanishing gradient), khiến mô hình khó học quan hệ xa.
+        Ngoài ra, sequential processing có nghĩa là không thể tính h_t song song — mỗi bước phải đợi bước trước.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 2.4: LSTM (vertical child of Slide 2)
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">2.4 &middot; Long Short-Term Memory</div>
+    <h3>LSTM</h3>
+
+    <div class="lstm-layout">
+        <img src="img/lstm-cell.png" alt="LSTM cell diagram">
+        <div class="lstm-text">
+            <p style="margin-top: 0;">Thêm <strong>cell state</strong> và các cổng điều khiển:</p>
+            <ul>
+                <li>Forget gate &mdash; quyết định thông tin nào bị loại bỏ</li>
+                <li>Input gate &mdash; quyết định thông tin mới nào được thêm vào</li>
+                <li>Output gate &mdash; quyết định đầu ra tại bước hiện tại</li>
+            </ul>
+            <div style="margin-top: 0.8em; font-size: 0.85em; color: var(--c-muted);">
+                Giảm <strong>vanishing gradient</strong>, giữ <strong>long-term dependencies</strong> tốt hơn RNN.
+            </div>
+        </div>
+    </div>
+
+    <aside class="notes">
+        LSTM (Hochreiter & Schmidhuber, 1997) giải quyết vanishing gradient bằng cơ chế cell state và gate.
+        Cell state c_t hoạt động như "đường cao tốc" cho gradient — thông tin có thể chảy qua nhiều bước thời gian mà không bị suy giảm.
+        Forget gate f_t: sigmoid, output ∈ [0,1], quyết định giữ lại bao nhiêu từ cell state cũ.
+        Input gate i_t: sigmoid, quyết định thông tin mới nào được ghi vào cell state.
+        Output gate o_t: sigmoid, quyết định phần nào của cell state được output.
+        Công thức c_t = f_t ⊙ c_{t-1} + i_t ⊙ c̃_t là trọng tâm: phép cộng (thay vì nhân) giúp gradient không bị triệt tiêu.
+        Dù tốt hơn RNN, LSTM vẫn xử lý tuần tự — mỗi token vẫn phải đợi token trước. Đây là giới hạn mà Transformer nhắm đến giải quyết.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 2.5: Giới hạn của RNN/LSTM (vertical child of Slide 2)
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">2.5 &middot; Phân tích</div>
+    <h3>Giới hạn của RNN / LSTM</h3>
+
+    <table class="limit-table">
+        <thead>
+            <tr>
+                <th>Giới hạn</th>
+                <th>Nguyên nhân</th>
+                <th>Hệ quả</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="row-hl">
+                <td class="col-lim">Xử lý tuần tự</td>
+                <td class="col-cause">\(h_t\) phụ thuộc \(h_{t-1}\)</td>
+                <td class="col-effect">Khó song song hóa, train chậm</td>
+            </tr>
+            <tr>
+                <td class="col-lim">Đường truyền thông tin dài</td>
+                <td class="col-cause">Token xa phải đi qua nhiều bước</td>
+                <td class="col-effect">Long-term dependencies suy giảm</td>
+            </tr>
+            <tr class="row-hl">
+                <td class="col-lim">Bottleneck context vector</td>
+                <td class="col-cause">Seq2Seq nén cả câu vào một vector</td>
+                <td class="col-effect">Câu dài dễ mất thông tin</td>
+            </tr>
+            <tr>
+                <td class="col-lim">Vanishing gradient</td>
+                <td class="col-cause">Gradient qua nhiều bước thời gian</td>
+                <td class="col-effect">Khó học quan hệ xa trong chuỗi</td>
+            </tr>
+            <tr>
+                <td class="col-lim">Khó scale</td>
+                <td class="col-cause">RNN không tận dụng GPU tốt như attention</td>
+                <td class="col-effect">Hạn chế khi dữ liệu / model lớn</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <aside class="notes">
+        (1) Sequential processing là giới hạn lớn nhất: GPU được thiết kế để tính toán song song, nhưng RNN/LSTM buộc phải xử lý từng bước.
+        (2) Long-range dependencies: dù LSTM có cell state, thông tin từ token đầu câu đến token cuối vẫn phải đi qua nhiều cổng, dễ bị suy hao.
+        (3) Bottleneck: context vector c là điểm nghẽn thông tin — toàn bộ ý nghĩa của câu input phải được nén vào một vector. Với câu dài 50+ token, điều này gần như không thể.
+        (4) Vanishing gradient: dù LSTM giảm thiểu, nhưng không loại bỏ hoàn toàn. Gradient vẫn suy giảm theo cấp số nhân qua các bước thời gian.
+        (5) Scale: attention có độ phức tạp O(1) về đường truyền tín hiệu giữa hai vị trí bất kỳ, trong khi RNN là O(n). Điều này đặc biệt quan trọng khi huấn luyện trên tập dữ liệu lớn.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 2.6: Bridge sang Attention (vertical child of Slide 2)
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+
+    <div class="bridge-sub">Thay vì nén toàn bộ input vào một vector cố định&hellip;</div>
+
+    <div class="bridge-question">Nếu tại mỗi bước sinh token,<br>decoder có thể &ldquo;nhìn lại&rdquo; toàn bộ input<br>và chọn phần liên quan nhất thì sao?</div>
+
+    <svg class="bridge-svg" viewBox="0 0 400 130" xmlns="http://www.w3.org/2000/svg">
+        <!-- Decoder token (top center) -->
+        <rect x="162" y="4" width="76" height="28" rx="6" fill="#c44f1c"/>
+        <text x="200" y="23" font-family="var(--font-body)" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">y<subscript style="font-size:0.7em">t</subscript></text>
+
+        <!-- Intense attention lines -->
+        <line x1="200" y1="34" x2="52"  y2="98" stroke="#2d5bb9" stroke-width="2.0" opacity="0.8"/>
+        <line x1="200" y1="34" x2="110" y2="98" stroke="#2d5bb9" stroke-width="2.6" opacity="1.0"/>
+        <line x1="200" y1="34" x2="168" y2="98" stroke="#c44f1c" stroke-width="3.2" opacity="1.0"/>
+        <line x1="200" y1="34" x2="226" y2="98" stroke="#2d5bb9" stroke-width="2.2" opacity="0.9"/>
+        <line x1="200" y1="34" x2="284" y2="98" stroke="#2d5bb9" stroke-width="1.6" opacity="0.6"/>
+        <line x1="200" y1="34" x2="340" y2="98" stroke="#2d5bb9" stroke-width="1.2" opacity="0.4"/>
+
+        <!-- Encoder tokens (bottom row) -->
+        <rect x="16"  y="98" width="72" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="52"  y="116" font-family="var(--font-body)" font-size="13" fill="#1a1a2e" text-anchor="middle">x₁</text>
+        <rect x="94"  y="98" width="72" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="130" y="116" font-family="var(--font-body)" font-size="13" fill="#1a1a2e" text-anchor="middle">x₂</text>
+        <rect x="172" y="98" width="72" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="208" y="116" font-family="var(--font-body)" font-size="13" fill="#1a1a2e" text-anchor="middle">x₃</text>
+        <rect x="250" y="98" width="72" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="286" y="116" font-family="var(--font-body)" font-size="13" fill="#1a1a2e" text-anchor="middle">x₄</text>
+        <rect x="328" y="98" width="72" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="364" y="116" font-family="var(--font-body)" font-size="13" fill="#1a1a2e" text-anchor="middle">x₅</text>
+    </svg>
+
+    <div class="key-point">Đây là ý tưởng dẫn đến <strong>Bahdanau Attention</strong> (2015), rồi sau đó là <strong>Transformer</strong> (2017).</div>
+
+    <aside class="notes">
+        Câu hỏi then chốt: thay vì nén toàn bộ input thành một vector cố định (context vector bottleneck), điều gì sẽ xảy ra nếu tại mỗi bước sinh token, decoder có thể "nhìn" vào toàn bộ encoder states và tự quyết định phần nào quan trọng?
+        Đây chính là ý tưởng của attention mechanism.
+        Bahdanau et al. (2015) lần đầu áp dụng attention cho dịch máy — decoder tại mỗi bước tính weighted sum của tất cả encoder hidden states, với trọng số (attention weights) được học.
+        Tuy nhiên, Bahdanau attention vẫn dùng RNN làm encoder và decoder — tức là vẫn sequential.
+        Transformer (Vaswani et al., 2017) loại bỏ hoàn toàn RNN, chỉ dùng attention (Self-Attention) — đây là bước nhảy vọt.
+    </aside>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 3: Attention trước Transformer
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- ================================================================
+     SLIDE 3: Section divider (first vertical child)
+     ================================================================ -->
+<section class="section-divider" data-background-color="#faf8f5">
+    <div class="section-num">2.</div>
+    <div class="section-title">ATTENTION TRƯỚC<br>TRANSFORMER</div>
+    <div class="section-subtitle">Bahdanau Attention, 2014 &middot; Neural Machine Translation<br>by Jointly Learning to Align and Translate</div>
+
+    <div class="timeline">
+        <span class="timeline-item">Seq2Seq<br>bottleneck</span>
+        <span class="timeline-arrow">→</span>
+        <span class="timeline-item highlight">Dynamic<br>context vector</span>
+        <span class="timeline-arrow">→</span>
+        <span class="timeline-item highlight">Attention</span>
+    </div>
+    <div class="nav-hint">▼</div>
+
+    <aside class="notes">
+        Trước Transformer, Attention đã xuất hiện trong neural machine translation. Transformer không phát minh Attention từ con số 0, mà đưa Attention thành cơ chế trung tâm và loại bỏ recurrence.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 3.1: Vấn đề fixed context vector
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.1 &middot; Phân tích</div>
+    <h3>Vấn đề của Seq2Seq ban đầu</h3>
+
+    <svg class="bottleneck-svg" viewBox="0 0 600 140" xmlns="http://www.w3.org/2000/svg">
+        <!-- Encoder tokens -->
+        <rect x="10"  y="38" width="44" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="32"  y="56" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₁</text>
+        <rect x="58"  y="38" width="44" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="80"  y="56" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₂</text>
+        <rect x="106" y="38" width="44" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="128" y="56" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₃</text>
+        <rect x="154" y="38" width="44" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="176" y="56" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₄</text>
+        <rect x="202" y="38" width="44" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="224" y="56" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">x₅</text>
+
+        <!-- Arrows to Encoder -->
+        <line x1="158" y1="66" x2="185" y2="82" stroke="#2d5bb9" stroke-width="1.4" marker-end="url(#arr-bn)"/>
+
+        <!-- Encoder box -->
+        <rect x="115" y="84" width="140" height="34" rx="6" fill="#dce3f2" stroke="#2d5bb9" stroke-width="1.2"/>
+        <text x="185" y="105" font-family="var(--font-display)" font-size="12" font-weight="600" fill="#2d5bb9" text-anchor="middle">Encoder</text>
+
+        <!-- Arrow to bottleneck -->
+        <line x1="255" y1="101" x2="290" y2="101" stroke="#c44f1c" stroke-width="1.6" marker-end="url(#arr-bn2)"/>
+
+        <!-- Bottleneck context vector c -->
+        <rect x="292" y="82" width="48" height="38" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+        <text x="316" y="105" font-family="var(--font-body)" font-size="14" font-weight="700" fill="#92400e" text-anchor="middle">c</text>
+        <text x="316" y="132" font-family="var(--font-body)" font-size="8" fill="#c44f1c" text-anchor="middle" font-weight="700">information</text>
+        <text x="316" y="141" font-family="var(--font-body)" font-size="8" fill="#c44f1c" text-anchor="middle" font-weight="700">bottleneck</text>
+
+        <!-- Arrow to Decoder -->
+        <line x1="340" y1="101" x2="374" y2="101" stroke="#c44f1c" stroke-width="1.6" marker-end="url(#arr-bn2)"/>
+
+        <!-- Decoder box -->
+        <rect x="376" y="84" width="140" height="34" rx="6" fill="#fdf3ec" stroke="#c44f1c" stroke-width="1.2"/>
+        <text x="446" y="105" font-family="var(--font-display)" font-size="12" font-weight="600" fill="#c44f1c" text-anchor="middle">Decoder</text>
+
+        <!-- Arrow to output tokens -->
+        <line x1="446" y1="120" x2="416" y2="136" stroke="#2d5bb9" stroke-width="1.4" marker-end="url(#arr-bn)"/>
+
+        <!-- Output tokens -->
+        <rect x="376" y="138" width="44" height="26" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="398" y="156" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₁</text>
+        <rect x="424" y="138" width="44" height="26" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="446" y="156" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₂</text>
+        <rect x="472" y="138" width="44" height="26" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="494" y="156" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₃</text>
+
+        <defs>
+            <marker id="arr-bn" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2d5bb9"/></marker>
+            <marker id="arr-bn2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c44f1c"/></marker>
+        </defs>
+    </svg>
+
+    <div class="key-point">Câu càng dài &rarr; càng nhiều thông tin bị ép vào một vector cố định &rarr; dễ mất thông tin.</div>
+
+    <aside class="notes">
+        Seq2Seq ban đầu (Sutskever et al., 2014) có một điểm yếu kiến trúc: toàn bộ câu nguồn phải được nén vào một context vector c duy nhất. Vector này có kích thước cố định (vd: 512 chiều). Khi câu dài 50+ token, một vector 512 chiều không thể chứa đầy đủ ngữ nghĩa của toàn bộ câu — đây chính là information bottleneck.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 3.2: Ý tưởng chính của Bahdanau Attention
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.2 &middot; Ý tưởng</div>
+    <h3>Bahdanau Attention</h3>
+    <p style="font-size: 0.65em; color: var(--c-muted); margin-bottom: 0.6em;">Thay vì dùng một context vector cố định&hellip;</p>
+
+    <svg class="attention-multi-svg" viewBox="0 0 480 150" xmlns="http://www.w3.org/2000/svg">
+        <!-- Encoder hidden states row -->
+        <rect x="14"  y="120" width="68" height="24" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="48"  y="136" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₁</text>
+        <rect x="96"  y="120" width="68" height="24" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="130" y="136" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₂</text>
+        <rect x="178" y="120" width="68" height="24" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="212" y="136" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₃</text>
+        <rect x="260" y="120" width="68" height="24" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="294" y="136" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₄</text>
+        <rect x="342" y="120" width="68" height="24" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="376" y="136" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₅</text>
+
+        <!-- Context vectors -->
+        <rect x="124" y="50" width="36" height="26" rx="5" fill="#fef3c7" stroke="#d97706" stroke-width="1.2"/>
+        <text x="142" y="67" font-family="var(--font-body)" font-size="11" font-weight="700" fill="#92400e" text-anchor="middle">c₁</text>
+        <rect x="240" y="50" width="36" height="26" rx="5" fill="#fef3c7" stroke="#d97706" stroke-width="1.2"/>
+        <text x="258" y="67" font-family="var(--font-body)" font-size="11" font-weight="700" fill="#92400e" text-anchor="middle">c₂</text>
+        <rect x="356" y="50" width="36" height="26" rx="5" fill="#fef3c7" stroke="#d97706" stroke-width="1.2"/>
+        <text x="374" y="67" font-family="var(--font-body)" font-size="11" font-weight="700" fill="#92400e" text-anchor="middle">c₃</text>
+
+        <!-- c₁ lines to all h -->
+        <line x1="142" y1="78" x2="48"  y2="118" stroke="#2d5bb9" stroke-width="2.2" opacity="0.95"/>
+        <line x1="142" y1="78" x2="130" y2="118" stroke="#2d5bb9" stroke-width="1.0" opacity="0.35"/>
+        <line x1="142" y1="78" x2="212" y2="118" stroke="#2d5bb9" stroke-width="0.8" opacity="0.25"/>
+        <line x1="142" y1="78" x2="294" y2="118" stroke="#2d5bb9" stroke-width="0.6" opacity="0.2"/>
+        <line x1="142" y1="78" x2="376" y2="118" stroke="#2d5bb9" stroke-width="0.5" opacity="0.15"/>
+
+        <!-- c₂ lines to all h -->
+        <line x1="258" y1="78" x2="48"  y2="118" stroke="#2d5bb9" stroke-width="0.8" opacity="0.25"/>
+        <line x1="258" y1="78" x2="130" y2="118" stroke="#c44f1c" stroke-width="2.2" opacity="0.95"/>
+        <line x1="258" y1="78" x2="212" y2="118" stroke="#2d5bb9" stroke-width="1.4" opacity="0.6"/>
+        <line x1="258" y1="78" x2="294" y2="118" stroke="#2d5bb9" stroke-width="0.8" opacity="0.3"/>
+        <line x1="258" y1="78" x2="376" y2="118" stroke="#2d5bb9" stroke-width="0.6" opacity="0.2"/>
+
+        <!-- c₃ lines to all h -->
+        <line x1="374" y1="78" x2="48"  y2="118" stroke="#2d5bb9" stroke-width="0.6" opacity="0.2"/>
+        <line x1="374" y1="78" x2="130" y2="118" stroke="#2d5bb9" stroke-width="0.8" opacity="0.25"/>
+        <line x1="374" y1="78" x2="212" y2="118" stroke="#2d5bb9" stroke-width="1.4" opacity="0.55"/>
+        <line x1="374" y1="78" x2="294" y2="118" stroke="#2d5bb9" stroke-width="1.8" opacity="0.75"/>
+        <line x1="374" y1="78" x2="376" y2="118" stroke="#c44f1c" stroke-width="2.4" opacity="0.95"/>
+
+        <!-- Output tokens -->
+        <rect x="136" y="6" width="48" height="24" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="160" y="22" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₁</text>
+        <rect x="252" y="6" width="48" height="24" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="276" y="22" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₂</text>
+        <rect x="368" y="6" width="48" height="24" rx="4" fill="#fdf3ec" stroke="#e0c3a8" stroke-width="1"/>
+        <text x="392" y="22" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">y₃</text>
+
+        <!-- Arrows from c to y -->
+        <line x1="142" y1="48" x2="160" y2="30" stroke="#2d5bb9" stroke-width="1.2" marker-end="url(#arr-multi)"/>
+        <line x1="258" y1="48" x2="276" y2="30" stroke="#2d5bb9" stroke-width="1.2" marker-end="url(#arr-multi)"/>
+        <line x1="374" y1="48" x2="392" y2="30" stroke="#2d5bb9" stroke-width="1.2" marker-end="url(#arr-multi)"/>
+
+        <defs><marker id="arr-multi" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#2d5bb9"/></marker></defs>
+    </svg>
+
+    <div class="key-point">Context vector không còn cố định: \(c_1, c_2, \dots, c_i\) thay đổi theo từng bước sinh token.</div>
+
+    <aside class="notes">
+        Attention ở đây nghĩa là decoder không phải nhớ tất cả qua một vector duy nhất. Khi sinh từng từ, nó được phép hỏi lại encoder: ở bước này tôi nên tập trung vào phần nào của câu gốc?
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 3.3: Cơ chế Encoder–Decoder với Attention
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.3 &middot; Cơ chế</div>
+    <h3>Encoder&ndash;Decoder với Attention</h3>
+
+    <svg class="attention-multi-svg" viewBox="0 0 480 150" xmlns="http://www.w3.org/2000/svg">
+        <!-- Decoder state at top -->
+        <rect x="164" y="4" width="152" height="26" rx="6" fill="#c44f1c"/>
+        <text x="240" y="22" font-family="var(--font-body)" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">Decoder state s<subscript style="font-size:0.7em">i−1</subscript></text>
+
+        <!-- Connection line -->
+        <line x1="240" y1="30" x2="240" y2="56" stroke="#2d5bb9" stroke-width="1.4" marker-end="url(#arr-att)"/>
+
+        <!-- Compute scores label -->
+        <rect x="160" y="58" width="160" height="22" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="240" y="73" font-family="var(--font-body)" font-size="10" fill="#1a1a2e" text-anchor="middle">compute alignment scores</text>
+
+        <!-- Encoder hidden states -->
+        <rect x="18"  y="98" width="56" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="46"  y="115" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₁</text>
+        <rect x="88"  y="98" width="56" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="116" y="115" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₂</text>
+        <rect x="158" y="98" width="56" height="26" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.2"/>
+        <text x="186" y="115" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₃</text>
+        <rect x="228" y="98" width="56" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="256" y="115" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₄</text>
+        <rect x="296" y="98" width="56" height="26" rx="4" fill="#e8ecf4" stroke="#bac4d8" stroke-width="1"/>
+        <text x="324" y="115" font-family="var(--font-body)" font-size="11" fill="#1a1a2e" text-anchor="middle">h₅</text>
+
+        <!-- Connection lines from "compute" to each h -->
+        <line x1="212" y1="80" x2="46"  y2="96" stroke="#2d5bb9" stroke-width="0.8" opacity="0.4"/>
+        <line x1="230" y1="80" x2="116" y2="96" stroke="#2d5bb9" stroke-width="1.2" opacity="0.55"/>
+        <line x1="245" y1="80" x2="186" y2="96" stroke="#c44f1c" stroke-width="2.2" opacity="1.0"/>
+        <line x1="255" y1="80" x2="256" y2="96" stroke="#2d5bb9" stroke-width="1.4" opacity="0.6"/>
+        <line x1="270" y1="80" x2="324" y2="96" stroke="#2d5bb9" stroke-width="0.7" opacity="0.3"/>
+
+        <!-- Attention weights below h boxes -->
+        <text x="46"  y="140" font-family="var(--font-body)" font-size="10" fill="#5b6678" text-anchor="middle">α₀.₁</text>
+        <text x="116" y="140" font-family="var(--font-body)" font-size="10" fill="#5b6678" text-anchor="middle">α₀.₂</text>
+        <text x="186" y="140" font-family="var(--font-body)" font-size="10" fill="#c44f1c" text-anchor="middle" font-weight="700">α₀.₃</text>
+        <text x="256" y="140" font-family="var(--font-body)" font-size="10" fill="#5b6678" text-anchor="middle">α₀.₄</text>
+        <text x="324" y="140" font-family="var(--font-body)" font-size="10" fill="#5b6678" text-anchor="middle">α₀.₅</text>
+
+        <defs><marker id="arr-att" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#2d5bb9"/></marker></defs>
+    </svg>
+
+    <div class="equation-annotated">
+        \(c_i = \alpha_{i,1}h_1 + \alpha_{i,2}h_2 + \alpha_{i,3}h_3 + \dots + \alpha_{i,T}h_T\)
+    </div>
+
+    <div class="key-point">Decoder không chọn một hidden state duy nhất, mà lấy <strong>tổng có trọng số</strong> của toàn bộ encoder states.</div>
+
+    <aside class="notes">
+        Encoder (BiRNN) tạo ra một hidden state hⱼ cho mỗi vị trí j trong câu nguồn. Decoder tại bước i dùng state s_{i-1} để so khớp với từng hⱼ, tính alignment score → softmax thành attention weights α_{i,j} → context vector c_i là tổng có trọng số của các hⱼ.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 3.4: Công thức alignment score
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.4 &middot; Công thức</div>
+    <h3>Alignment Score</h3>
+
+    <div class="formula-2col">
+        <div class="formula-block">
+            <p style="margin: 0.3em 0; font-size: 0.9em;">$$ e_{ij} = a(s_{i-1}, h_j) $$</p>
+            <p style="margin: 0.3em 0; font-size: 0.9em;">$$ \alpha_{ij} = \text{softmax}(e_{ij}) $$</p>
+            <p style="margin: 0.3em 0; font-size: 0.9em;">$$ c_i = \sum_{j} \alpha_{ij} \, h_j $$</p>
+        </div>
+        <div class="formula-notes">
+            <p><strong>\(s_{i-1}\)</strong> &mdash; trạng thái decoder trước đó</p>
+            <p><strong>\(h_j\)</strong> &mdash; hidden state encoder tại vị trí j</p>
+            <p><strong>\(e_{ij}\)</strong> &mdash; alignment score</p>
+            <p><strong>\(\alpha_{ij}\)</strong> &mdash; attention weight (sau softmax)</p>
+            <p><strong>\(c_i\)</strong> &mdash; context vector riêng cho bước i</p>
+        </div>
+    </div>
+
+    <p style="font-size: 0.5em; color: var(--c-muted); margin-top: 0.6em;">Additive attention (Bahdanau): \(e_{ij} = v_a^{\mathsf{T}} \tanh(W_a s_{i-1} + U_a h_j)\)</p>
+
+    <aside class="notes">
+        Alignment function a là một mạng neural nhỏ (feed-forward network). Bahdanau dùng additive attention: score = v^T tanh(W s + U h). Khác với scaled dot-product attention trong Transformer. Luồng: score → softmax → attention weights → weighted sum = context vector.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 3.5: Ví dụ dịch máy trực quan
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.5 &middot; Ví dụ trực quan</div>
+    <h3>Soft Alignment</h3>
+    <p style="font-size: 0.6em; color: var(--c-muted); margin-bottom: 0.6em;">Input: <strong>I love cats</strong> &rarr; Output: <strong>Tôi yêu mèo</strong></p>
+
+    <div class="attention-example">
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4; font-weight: 700;">I</div>
+            <div class="weight" style="color: var(--c-accent); font-weight: 700;">0.90</div>
+            <div class="bar" style="width: 70px; background: #2d5bb9; opacity: 0.9;"></div>
+        </div>
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4;">love</div>
+            <div class="weight" style="color: var(--c-muted);">0.05</div>
+            <div class="bar" style="width: 70px; background: #d6d3cc;"></div>
+        </div>
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4;">cats</div>
+            <div class="weight" style="color: var(--c-muted);">0.05</div>
+            <div class="bar" style="width: 70px; background: #d6d3cc;"></div>
+        </div>
+    </div>
+    <p style="font-size: 0.6em; color: var(--c-accent); font-weight: 700; margin: 0.3em 0;">Khi sinh "Tôi" &rarr; chú ý mạnh nhất vào "I"</p>
+
+    <div class="attention-example">
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4;">I</div>
+            <div class="weight" style="color: var(--c-muted);">0.05</div>
+            <div class="bar" style="width: 70px; background: #d6d3cc;"></div>
+        </div>
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4; font-weight: 700;">love</div>
+            <div class="weight" style="color: var(--c-accent); font-weight: 700;">0.90</div>
+            <div class="bar" style="width: 70px; background: #2d5bb9; opacity: 0.9;"></div>
+        </div>
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4;">cats</div>
+            <div class="weight" style="color: var(--c-muted);">0.05</div>
+            <div class="bar" style="width: 70px; background: #d6d3cc;"></div>
+        </div>
+    </div>
+    <p style="font-size: 0.6em; color: var(--c-accent); font-weight: 700; margin: 0.3em 0;">Khi sinh "yêu" &rarr; chú ý mạnh nhất vào "love"</p>
+
+    <div class="attention-example">
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4;">I</div>
+            <div class="weight" style="color: var(--c-muted);">0.05</div>
+            <div class="bar" style="width: 70px; background: #d6d3cc;"></div>
+        </div>
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4;">love</div>
+            <div class="weight" style="color: var(--c-muted);">0.10</div>
+            <div class="bar" style="width: 70px; background: #d6d3cc;"></div>
+        </div>
+        <div class="src-token">
+            <div style="padding: 6px 14px; border-radius: 4px; background: #e8ecf4; font-weight: 700;">cats</div>
+            <div class="weight" style="color: var(--c-accent); font-weight: 700;">0.85</div>
+            <div class="bar" style="width: 70px; background: #2d5bb9; opacity: 0.85;"></div>
+        </div>
+    </div>
+    <p style="font-size: 0.6em; color: var(--c-accent); font-weight: 700; margin: 0.3em 0;">Khi sinh "mèo" &rarr; chú ý mạnh nhất vào "cats"</p>
+
+    <div class="key-point" style="margin-top: 0.8em;">Attention tạo ra <strong>alignment mềm</strong> giữa source tokens và target tokens.</div>
+
+    <aside class="notes">
+        Khi decoder sinh từ &ldquo;mèo&rdquo;, nó không cần nén toàn bộ câu &ldquo;I love cats&rdquo; vào một vector cố định. Nó có thể phân bổ attention mạnh nhất vào &ldquo;cats&rdquo;, rồi dùng thông tin đó để sinh từ phù hợp. Đây là soft alignment &mdash; mỗi output token có thể &ldquo;nhìn&rdquo; vào nhiều input token với trọng số khác nhau.
+    </aside>
+</section>
+
+<!-- ================================================================
+     SLIDE 3.6: Bahdanau giải quyết gì, còn hạn chế gì?
+     ================================================================ -->
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.6 &middot; Đánh giá</div>
+    <h3>Bahdanau Attention: Điểm tốt &amp; Điểm yếu</h3>
+
+    <table class="compare-table">
+        <thead>
+            <tr>
+                <th class="col-solved">Bahdanau Attention giải quyết</th>
+                <th class="col-remain">Vẫn còn hạn chế</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="col-solved">Không ép toàn bộ input vào một vector cố định</td>
+                <td class="col-remain">Encoder vẫn là BiRNN</td>
+            </tr>
+            <tr>
+                <td class="col-solved">Decoder nhìn lại toàn bộ input ở mỗi bước</td>
+                <td class="col-remain">Decoder vẫn sinh tuần tự</td>
+            </tr>
+            <tr>
+                <td class="col-solved">Tốt hơn với câu dài</td>
+                <td class="col-remain">Khó parallel hóa toàn bộ</td>
+            </tr>
+            <tr>
+                <td class="col-solved">Tạo alignment mềm giữa source và target</td>
+                <td class="col-remain">Vẫn có đường truyền dài qua RNN</td>
+            </tr>
+            <tr>
+                <td class="col-solved">Là nền móng cho attention trong Transformer</td>
+                <td class="col-remain">Chưa loại bỏ recurrence</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="key-point" style="margin-top: 1em;">
+        Bahdanau Attention giải quyết <strong>bottleneck</strong> của Seq2Seq, nhưng chưa giải quyết triệt để <strong>sequential processing</strong>.<br>
+        Transformer sẽ đi xa hơn: loại bỏ recurrence và dùng attention làm cơ chế chính.
+    </div>
+
+    <aside class="notes">
+        Bahdanau Attention (2014) là bước đột phá: lần đầu tiên attention được dùng trong NMT để giải quyết information bottleneck. Nhưng mô hình vẫn dùng BiRNN cho encoder và RNN cho decoder. Transformer kế thừa ý tưởng attention nhưng loại bỏ recurrence hoàn toàn — dùng self-attention để xử lý toàn bộ chuỗi song song.
+    </aside>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 4: Kiến trúc Transformer (elaborated)
+     ================================================================ -->
+<section class="transformer-rebuild">
+
+<section class="section-divider" data-background-color="#faf8f5">
+    <div class="section-num">3.</div>
+    <div class="section-title">KIẾN TRÚC<br>TRANSFORMER</div>
+    <div class="section-subtitle">Từ self-attention đến encoder-decoder stack</div>
+    <div class="t-chip-row" aria-hidden="true">
+        <span class="t-chip">Động lực</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="t-chip">Attention core</span>
+        <span class="t-arrow">&rarr;</span>
+        <span class="t-chip">Encoder / Decoder</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.1 &middot; Động lực</div>
+    <h3>Transformer Giải Quyết Điều Gì?</h3>
+    <p class="slide-def">Bahdanau Attention đã giảm bottleneck, nhưng vẫn còn RNN ở lõi. Transformer xử lý toàn chuỗi bằng attention để giảm đường truyền thông tin và song song hóa training.</p>
+
+    <div class="t-compare-grid">
+        <div class="t-panel t-warn">
+            <h4>RNN / LSTM</h4>
+            <p><strong>Tuần tự:</strong> \(h_t\) phải chờ \(h_{t-1}\).</p>
+            <p>Quan hệ xa đi qua nhiều bước, dễ suy giảm gradient.</p>
+            <svg class="t-flow-svg" viewBox="0 0 250 70" role="img" aria-label="RNN sequential path">
+                <text x="30" y="32" class="diagram-text-sm">x1</text>
+                <text x="90" y="32" class="diagram-text-sm">x2</text>
+                <text x="150" y="32" class="diagram-text-sm">x3</text>
+                <text x="210" y="32" class="diagram-text-sm">x4</text>
+                <path d="M45 28 H75 M105 28 H135 M165 28 H195" stroke="#dc2626" stroke-width="3" marker-end="url(#t-red-arrow-elab)"/>
+                <text x="125" y="58" class="diagram-text-sm" fill="#dc2626">wait &middot; wait &middot; wait</text>
+                <defs><marker id="t-red-arrow-elab" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#dc2626"/></marker></defs>
+            </svg>
+        </div>
+        <div class="t-panel t-cross">
+            <h4>Bahdanau Attention</h4>
+            <p><strong>Decoder nhìn lại input</strong> thay vì dùng một vector cố định.</p>
+            <p>Nhưng encoder/decoder vẫn chạy tuần tự bằng RNN.</p>
+            <svg class="t-flow-svg" viewBox="0 0 250 70" role="img" aria-label="Attention over encoder states">
+                <circle cx="50" cy="26" r="14" fill="#fff" stroke="#d5a83d"/>
+                <circle cx="105" cy="26" r="14" fill="#fff" stroke="#d5a83d"/>
+                <circle cx="160" cy="26" r="14" fill="#fff" stroke="#d5a83d"/>
+                <rect x="190" y="12" width="42" height="28" rx="6" fill="#fff3bd" stroke="#d5a83d"/>
+                <path d="M50 42 C78 64, 165 64, 211 42 M105 42 C118 55, 172 55, 211 42 M160 42 C172 50, 190 50, 211 42" fill="none" stroke="#c44f1c" stroke-width="2"/>
+                <text x="211" y="30" class="diagram-text-sm">y_t</text>
+            </svg>
+        </div>
+        <div class="t-panel t-good">
+            <h4>Transformer</h4>
+            <p><strong>Mọi token nối trực tiếp</strong> với mọi token khác qua self-attention.</p>
+            <p>Không cần recurrence trong encoder/decoder layer.</p>
+            <svg class="t-flow-svg" viewBox="0 0 250 70" role="img" aria-label="Transformer all-to-all token links">
+                <circle cx="55" cy="24" r="13" fill="#ecfdf5" stroke="#166534"/>
+                <circle cx="125" cy="24" r="13" fill="#ecfdf5" stroke="#166534"/>
+                <circle cx="195" cy="24" r="13" fill="#ecfdf5" stroke="#166534"/>
+                <circle cx="125" cy="55" r="13" fill="#ecfdf5" stroke="#166534"/>
+                <path d="M68 24 H112 M138 24 H182 M65 32 L112 49 M185 32 L138 49 M125 37 V42" stroke="#166534" stroke-width="2" fill="none"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="t-callout">Điểm chốt: Transformer không chỉ thêm attention; nó thay cách truyền thông tin bên trong mô hình bằng các phép toán ma trận song song.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.2A &middot; Big picture</div>
+    <h3>Encoder-Decoder Stack</h3>
+    <p class="slide-def">Transformer gốc dùng \(N=6\) encoder layers và \(N=6\) decoder layers. Các layer cùng cấu trúc nhưng không chia sẻ trọng số.</p>
+    <svg class="t-wide-svg" viewBox="0 0 920 330" role="img" aria-label="Transformer encoder decoder stack">
+        <rect x="80" y="42" width="310" height="230" rx="14" fill="#eef4ff" stroke="#9ab2df" stroke-width="2"/>
+        <text x="235" y="78" font-family="var(--font-display)" font-size="28" font-weight="700" fill="#2d5bb9" text-anchor="middle">Encoder x6</text>
+        <rect x="132" y="110" width="206" height="44" rx="8" fill="#dfeaff" stroke="#7f9fd7"/><text x="235" y="138" class="diagram-text">Self-Attention</text>
+        <rect x="132" y="166" width="206" height="44" rx="8" fill="#fff" stroke="#bac4d8"/><text x="235" y="194" class="diagram-text">FFN + AddNorm</text>
+        <rect x="150" y="230" width="170" height="34" rx="8" fill="#fff3bd" stroke="#d6a62c"/><text x="235" y="252" class="diagram-text-sm">Memory H</text>
+        <rect x="530" y="42" width="310" height="230" rx="14" fill="#fff2e8" stroke="#deb08f" stroke-width="2"/>
+        <text x="685" y="78" font-family="var(--font-display)" font-size="28" font-weight="700" fill="#c44f1c" text-anchor="middle">Decoder x6</text>
+        <rect x="582" y="104" width="206" height="40" rx="8" fill="#ffe9dc" stroke="#d79565"/><text x="685" y="130" class="diagram-text">Masked Self-Attn</text>
+        <rect x="582" y="154" width="206" height="40" rx="8" fill="#fff3bd" stroke="#d6a62c"/><text x="685" y="180" class="diagram-text">Cross-Attention</text>
+        <rect x="582" y="204" width="206" height="40" rx="8" fill="#fff" stroke="#deb08f"/><text x="685" y="230" class="diagram-text">FFN + AddNorm</text>
+        <path d="M320 247 C420 247, 455 174, 574 174" stroke="#d97706" stroke-width="4" fill="none" marker-end="url(#t-orange-arrow)"/>
+    </svg>
+    <div class="t-chip-row"><span class="t-chip">d_model = 512</span><span class="t-chip">h = 8</span><span class="t-chip">d_k = d_v = 64</span><span class="t-chip">d_ff = 2048</span></div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.2B &middot; Memory H</div>
+    <h3>Encoder Memory Là Gì?</h3>
+    <p class="slide-def">Encoder không trả về một vector duy nhất. Nó trả về một ma trận memory gồm một vector ngữ cảnh cho từng token nguồn.</p>
+    <div class="t-vector-row">
+        <div class="t-vector-card t-enc"><b>h_I</b><span>[0.10, 0.30, ..., -0.20]</span></div>
+        <div class="t-vector-card t-enc"><b>h_love</b><span>[0.40, -0.10, ..., 0.60]</span></div>
+        <div class="t-vector-card t-enc"><b>h_cats</b><span>[0.80, 0.20, ..., 0.10]</span></div>
+    </div>
+    <div class="t-mini-equation">Encoder output: \(H=[h_1, h_2, ..., h_L]\), mỗi \(h_i\) vẫn có kích thước \(d_{model}=512\).</div>
+    <div class="t-callout">Decoder dùng H làm Key/Value trong cross-attention.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.2C &middot; Ví dụ</div>
+    <h3>Ví Dụ Big Picture: Dịch “I Love Cats”</h3>
+    <div class="t-flow-columns">
+        <div class="t-panel t-enc">
+            <div class="t-mini-label">Source side</div>
+            <h4>I &middot; love &middot; cats</h4>
+            <p>Encoder tạo memory: \(h_I, h_{love}, h_{cats}\).</p>
+        </div>
+        <div class="t-panel t-dec">
+            <div class="t-mini-label">Target side</div>
+            <h4>&lt;START&gt; Tôi yêu ___</h4>
+            <p>Decoder đang cần dự đoán token tiếp theo.</p>
+        </div>
+    </div>
+    <div class="t-chip-row"><span class="t-chip">Memory H</span><span class="t-arrow">&rarr;</span><span class="t-chip">Cross-Attention</span><span class="t-arrow">&rarr;</span><span class="t-chip">mèo</span></div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.4A &middot; Q-K-V</div>
+    <h3>Q, K, V: Ba Vai Trò Khác Nhau</h3>
+    <div class="t-three-col">
+        <div class="t-panel t-enc"><h4>Query</h4><p>Token hiện tại đang cần thông tin gì?</p></div>
+        <div class="t-panel t-cross"><h4>Key</h4><p>Mỗi token khác có nhãn gì để so khớp?</p></div>
+        <div class="t-panel t-dec"><h4>Value</h4><p>Nội dung thực sự sẽ được lấy về.</p></div>
+    </div>
+    <div class="t-mini-equation">Attention = so Query với các Key, rồi lấy tổng có trọng số của Value.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.4B &middot; Q-K-V</div>
+    <h3>Q, K, V Không Phải Ba Input Riêng</h3>
+    <p class="slide-def">Trong self-attention, cả Q, K và V đều được sinh ra từ cùng ma trận input \(X\), chỉ khác ma trận chiếu.</p>
+    <div class="t-numbered-flow">
+        <div class="t-step"><span class="t-step-num">1</span><b>Input</b><span>\(X\)</span></div>
+        <div class="t-step"><span class="t-step-num">2</span><b>Query</b><span>\(Q=XW_Q\)</span></div>
+        <div class="t-step"><span class="t-step-num">3</span><b>Key</b><span>\(K=XW_K\)</span></div>
+        <div class="t-step"><span class="t-step-num">4</span><b>Value</b><span>\(V=XW_V\)</span></div>
+    </div>
+    <div class="t-callout">Ba phép chiếu riêng giúp mô hình tách “cần gì”, “so khớp bằng gì” và “lấy nội dung gì”.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.4C &middot; Shape</div>
+    <h3>Shape Của Một Attention Head</h3>
+    <div class="t-vector-row">
+        <div class="t-vector-card"><b>\(X\)</b><span>\(L \times 512\)</span></div>
+        <div class="t-vector-card"><b>\(W_Q,W_K,W_V\)</b><span>\(512 \times 64\)</span></div>
+        <div class="t-vector-card t-enc"><b>\(Q,K,V\)</b><span>\(L \times 64\)</span></div>
+        <div class="t-vector-card t-cross"><b>\(QK^T\)</b><span>\(L \times L\)</span></div>
+    </div>
+    <div class="t-callout">Với Transformer base: \(d_{model}=512\), \(h=8\), nên mỗi head có \(d_k=d_v=64\).</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.4D &middot; Ví dụ</div>
+    <h3>Ví Dụ Q-K-V: “it” Hỏi “animal”</h3>
+    <div class="t-token-line">
+        <span class="t-token">The</span><span class="t-token hot">animal</span><span class="t-token">didn't</span><span class="t-token">cross</span><span class="t-token">because</span><span class="t-token hot">it</span><span class="t-token">was tired</span>
+    </div>
+    <div class="t-compact-grid">
+        <div class="t-panel t-dec"><h4>Query từ “it”</h4><p>“Tôi đang chỉ ai?”</p></div>
+        <div class="t-panel t-enc"><h4>Key/Value của “animal”</h4><p>Key khớp mạnh; Value chứa nội dung “con vật”.</p></div>
+    </div>
+    <div class="t-chip-row"><span class="t-chip">Q_it</span><span class="t-arrow">&rarr;</span><span class="t-chip">K_animal cao</span><span class="t-arrow">&rarr;</span><span class="t-chip">lấy nhiều V_animal</span></div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.5A &middot; Scaled dot-product</div>
+    <h3>\(QK^T\) Tạo Score Matrix</h3>
+    <div class="t-formula-strip">\( \operatorname{Attention}(Q,K,V)=\operatorname{softmax}\left(\frac{\color{#2d5bb9}{QK^T}}{\sqrt{d_k}}\right)V \)</div>
+    <p class="slide-def">Mỗi ô \([i,j]\) là mức độ query token i khớp với key token j trước softmax.</p>
+    <table class="t-heatmap" aria-label="Toy score matrix">
+        <tr><th></th><th>I</th><th>love</th><th>cats</th><th>today</th></tr>
+        <tr><th>I</th><td class="t-h4">2.4</td><td class="t-h1">0.7</td><td class="t-h1">0.5</td><td class="t-h0">0.1</td></tr>
+        <tr class="focus-row"><th>love</th><td class="t-h1">0.6</td><td class="t-h3">1.5</td><td class="t-h4">2.1</td><td class="t-h0">0.2</td></tr>
+        <tr><th>cats</th><td class="t-h0">0.2</td><td class="t-h2">1.1</td><td class="t-h4">2.5</td><td class="t-h0">0.1</td></tr>
+        <tr><th>today</th><td class="t-h0">0.1</td><td class="t-h1">0.4</td><td class="t-h1">0.3</td><td class="t-h4">2.3</td></tr>
+    </table>
+    <div class="t-callout">Hàng “love” là query đang xét; score cao ở “cats” nghĩa là “love” lấy nhiều thông tin từ “cats”.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.5B &middot; Scale</div>
+    <h3>Vì Sao Chia \(\sqrt{d_k}\)?</h3>
+    <div class="t-formula-strip">\( \operatorname{Attention}(Q,K,V)=\operatorname{softmax}\left(\frac{QK^T}{\color{#2d5bb9}{\sqrt{d_k}}}\right)V \)</div>
+    <div class="t-softmax-pair">
+        <div class="t-score-card t-warn">
+            <h4>Không scale</h4>
+            <div class="t-prob-bars">
+                <div class="t-prob-row best"><b>max</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 96%;"></div></div><span>0.96</span></div>
+                <div class="t-prob-row"><b>khác</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 3%;"></div></div><span>0.03</span></div>
+                <div class="t-prob-row"><b>khác</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 1%;"></div></div><span>0.01</span></div>
+            </div>
+            <p>Softmax dễ bão hòa, gradient yếu.</p>
+        </div>
+        <div class="t-score-card t-good">
+            <h4>Có scale</h4>
+            <div class="t-prob-bars">
+                <div class="t-prob-row best"><b>max</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 58%;"></div></div><span>0.58</span></div>
+                <div class="t-prob-row"><b>khác</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 27%;"></div></div><span>0.27</span></div>
+                <div class="t-prob-row"><b>khác</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 15%;"></div></div><span>0.15</span></div>
+            </div>
+            <p>Phân phối mềm hơn, học ổn định hơn.</p>
+        </div>
+    </div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.5C &middot; Softmax</div>
+    <h3>Softmax Được Tính Theo Từng Hàng</h3>
+    <div class="t-formula-strip">\( \operatorname{Attention}(Q,K,V)=\color{#2d5bb9}{\operatorname{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)}V \)</div>
+    <p class="slide-def">Mỗi query token có một phân phối attention riêng; tổng mỗi hàng sau softmax bằng 1.</p>
+    <table class="t-heatmap" aria-label="Softmax row-wise attention">
+        <tr><th></th><th>I</th><th>love</th><th>cats</th><th>today</th></tr>
+        <tr><th>I</th><td class="t-h4">0.70</td><td class="t-h1">0.15</td><td class="t-h1">0.10</td><td class="t-h0">0.05</td></tr>
+        <tr class="focus-row"><th>love</th><td class="t-h1">0.12</td><td class="t-h2">0.28</td><td class="t-h4">0.52</td><td class="t-h1">0.08</td></tr>
+        <tr><th>cats</th><td class="t-h0">0.04</td><td class="t-h2">0.22</td><td class="t-h4">0.68</td><td class="t-h0">0.06</td></tr>
+        <tr><th>today</th><td class="t-h0">0.05</td><td class="t-h1">0.12</td><td class="t-h1">0.10</td><td class="t-h3">0.73</td></tr>
+    </table>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.5D &middot; Ví dụ</div>
+    <h3>Weights × V Tạo Context Vector</h3>
+    <div class="t-formula-strip">\( \operatorname{Attention}(Q,K,V)=\operatorname{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)\color{#2d5bb9}{V} \)</div>
+    <div class="t-mini-equation">\(context_{love}=0.12V_I+0.28V_{love}+0.52V_{cats}+0.08V_{today}\)</div>
+    <div class="t-vector-row">
+        <div class="t-vector-card"><b>\(V_I\)</b><span>0.12</span></div>
+        <div class="t-vector-card"><b>\(V_{love}\)</b><span>0.28</span></div>
+        <div class="t-vector-card t-cross"><b>\(V_{cats}\)</b><span>0.52, đóng góp lớn nhất</span></div>
+        <div class="t-vector-card"><b>\(V_{today}\)</b><span>0.08</span></div>
+    </div>
+    <div class="t-callout">Toy numbers minh họa, không phải output từ model thật.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.6A &middot; Multi-head</div>
+    <h3>Một Head Chỉ Là Một Góc Nhìn</h3>
+    <p class="slide-def">Nếu chỉ có một attention map, nhiều loại quan hệ trong câu bị trộn vào cùng một bảng trọng số.</p>
+    <div class="t-token-line"><span class="t-token">The</span><span class="t-token hot">animal</span><span class="t-token">cross</span><span class="t-token">street</span><span class="t-token hot">it</span><span class="t-token">was tired</span></div>
+    <div class="t-callout">Một head có thể phải vừa học tham chiếu đại từ, vừa học cú pháp, vừa học quan hệ cục bộ.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.6B &middot; Multi-head</div>
+    <h3>8 Head Song Song</h3>
+    <div class="t-head-grid">
+        <div class="t-head"><b>Head 1</b><span>it → animal</span></div>
+        <div class="t-head"><b>Head 2</b><span>it → was/tired</span></div>
+        <div class="t-head"><b>Head 3</b><span>cross → street</span></div>
+        <div class="t-head"><b>Head 4</b><span>local syntax</span></div>
+        <div class="t-head"><b>Head 5</b><span>phrase boundary</span></div>
+        <div class="t-head"><b>Head 6</b><span>modifier</span></div>
+        <div class="t-head"><b>Head 7</b><span>position</span></div>
+        <div class="t-head"><b>Head 8</b><span>other pattern</span></div>
+    </div>
+    <div class="t-chip-row"><span class="t-chip">512 chiều</span><span class="t-arrow">&rarr;</span><span class="t-chip">8 × 64 chiều</span></div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.6C &middot; Multi-head</div>
+    <h3>Concat Rồi Trộn Bằng \(W^O\)</h3>
+    <div class="t-chip-row"><span class="t-chip">head1</span><span class="t-chip">head2</span><span class="t-chip">...</span><span class="t-chip">head8</span><span class="t-arrow">&rarr;</span><span class="t-chip">Concat 512</span><span class="t-arrow">&rarr;</span><span class="t-chip">\(W^O\)</span></div>
+    <div class="t-callout">Nếu chỉ concat mà không có \(W^O\), các head chưa được trộn thông tin với nhau.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.6D &middot; Ví dụ</div>
+    <h3>Ví Dụ Multi-Head: Một Câu, Nhiều Quan Hệ</h3>
+    <div class="t-compact-grid">
+        <div>
+            <div class="t-mini-label">Head A: local / identity</div>
+            <table class="t-heatmap">
+                <tr><th>Q\K</th><th>The</th><th>animal</th><th>it</th><th>tired</th></tr>
+                <tr><th>The</th><td class="t-h4">0.76</td><td class="t-h1">0.14</td><td class="t-h0">0.05</td><td class="t-h0">0.05</td></tr>
+                <tr><th>animal</th><td class="t-h1">0.12</td><td class="t-h4">0.71</td><td class="t-h1">0.10</td><td class="t-h0">0.07</td></tr>
+                <tr><th>it</th><td class="t-h0">0.04</td><td class="t-h1">0.16</td><td class="t-h4">0.67</td><td class="t-h1">0.13</td></tr>
+                <tr><th>tired</th><td class="t-h0">0.03</td><td class="t-h0">0.08</td><td class="t-h2">0.24</td><td class="t-h4">0.65</td></tr>
+            </table>
+        </div>
+        <div>
+            <div class="t-mini-label">Head B: reference / semantic</div>
+            <table class="t-heatmap">
+                <tr><th>Q\K</th><th>The</th><th>animal</th><th>it</th><th>tired</th></tr>
+                <tr><th>The</th><td class="t-h2">0.31</td><td class="t-h3">0.42</td><td class="t-h1">0.15</td><td class="t-h1">0.12</td></tr>
+                <tr><th>animal</th><td class="t-h0">0.07</td><td class="t-h4">0.58</td><td class="t-h2">0.25</td><td class="t-h1">0.10</td></tr>
+                <tr><th>it</th><td class="t-h0">0.04</td><td class="t-h4">0.82</td><td class="t-h1">0.08</td><td class="t-h0">0.06</td></tr>
+                <tr><th>tired</th><td class="t-h0">0.04</td><td class="t-h3">0.39</td><td class="t-h3">0.37</td><td class="t-h2">0.20</td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="t-callout">Head A giữ cấu trúc cục bộ/identity. Head B bắt quan hệ tham chiếu: “it” attend mạnh vào “animal”, “tired” nhìn cả “it” và “animal”.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.7A &middot; Positional encoding</div>
+    <h3>Attention Không Tự Biết Thứ Tự</h3>
+    <div class="t-compact-grid">
+        <div class="t-panel"><h4>dog bites man</h4><div class="t-token-line" style="justify-content:flex-start;"><span class="t-token">dog<span class="t-pos-badge">pos0</span></span><span class="t-token">bites<span class="t-pos-badge">pos1</span></span><span class="t-token">man<span class="t-pos-badge">pos2</span></span></div></div>
+        <div class="t-panel"><h4>man bites dog</h4><div class="t-token-line" style="justify-content:flex-start;"><span class="t-token">man<span class="t-pos-badge">pos0</span></span><span class="t-token">bites<span class="t-pos-badge">pos1</span></span><span class="t-token">dog<span class="t-pos-badge">pos2</span></span></div></div>
+    </div>
+    <div class="t-callout">Cùng token nhưng đổi vị trí sẽ đổi nghĩa. Transformer cần tín hiệu vị trí để phân biệt vai trò trong câu.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.7B &middot; Không có PE</div>
+    <h3>Không Có PE: Score Chỉ Dựa Trên Token</h3>
+    <div class="t-compact-grid">
+        <div>
+            <div class="t-mini-label">dog bites man</div>
+            <table class="t-heatmap"><tr><th>Q\K</th><th>dog</th><th>bites</th><th>man</th></tr><tr><th>dog</th><td class="t-h3">+0.35</td><td class="t-h1">+0.04</td><td class="t-h1">+0.05</td></tr><tr><th>bites</th><td class="t-h1">+0.04</td><td class="t-h4">+0.41</td><td class="t-h0">+0.01</td></tr><tr><th>man</th><td class="t-h1">+0.05</td><td class="t-h0">+0.01</td><td class="t-h4">+0.46</td></tr></table>
+        </div>
+        <div>
+            <div class="t-mini-label">man bites dog</div>
+            <table class="t-heatmap"><tr><th>Q\K</th><th>man</th><th>bites</th><th>dog</th></tr><tr><th>man</th><td class="t-h4">+0.46</td><td class="t-h0">+0.01</td><td class="t-h1">+0.05</td></tr><tr><th>bites</th><td class="t-h0">+0.01</td><td class="t-h4">+0.41</td><td class="t-h1">+0.04</td></tr><tr><th>dog</th><td class="t-h1">+0.05</td><td class="t-h1">+0.04</td><td class="t-h3">+0.35</td></tr></table>
+        </div>
+    </div>
+    <div class="t-callout">Toy pre-softmax score. Không có PE, matrix chủ yếu chỉ bị hoán vị theo token; mô hình chưa có tín hiệu riêng để biết dog đang làm chủ ngữ hay tân ngữ.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.7C &middot; Có PE</div>
+    <h3>Có PE: Cùng Token, Khác Vị Trí, Khác Score</h3>
+    <div class="t-compact-grid">
+        <div>
+            <div class="t-mini-label">dog bites man + PE</div>
+            <table class="t-heatmap"><tr><th>Q\K</th><th>dog</th><th>bites</th><th>man</th></tr><tr><th>dog</th><td class="t-h2">+1.70</td><td class="t-h1">+1.52</td><td class="t-h0">+1.38</td></tr><tr><th>bites</th><td class="t-h1">+1.52</td><td class="t-h4">+2.73</td><td class="t-h3">+2.35</td></tr><tr><th>man</th><td class="t-h0">+1.38</td><td class="t-h3">+2.35</td><td class="t-h4">+2.84</td></tr></table>
+        </div>
+        <div>
+            <div class="t-mini-label">man bites dog + PE</div>
+            <table class="t-heatmap"><tr><th>Q\K</th><th>man</th><th>bites</th><th>dog</th></tr><tr><th>man</th><td class="t-h4">+2.72</td><td class="t-h3">+2.09</td><td class="t-h0">+1.50</td></tr><tr><th>bites</th><td class="t-h3">+2.09</td><td class="t-h4">+2.73</td><td class="t-h2">+1.78</td></tr><tr><th>dog</th><td class="t-h0">+1.50</td><td class="t-h2">+1.78</td><td class="t-h1">+1.59</td></tr></table>
+        </div>
+    </div>
+    <div class="t-callout">Toy pre-softmax score. Có PE, attention score thay đổi theo vị trí: cùng token “dog” nhưng đứng đầu câu và cuối câu tạo tương tác khác nhau.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.7D &middot; PE vector</div>
+    <h3>Embedding + PE Tạo Vector Theo Vị Trí</h3>
+    <div class="t-vector-row">
+        <div class="t-vector-card t-enc"><b>dog ở vị trí 0</b><span>Embedding(dog) + PE(0)</span></div>
+        <div class="t-vector-card t-cross"><b>dog ở vị trí 2</b><span>Embedding(dog) + PE(2)</span></div>
+        <div class="t-vector-card"><b>khác nhau</b><span>cùng token, khác role trong câu</span></div>
+    </div>
+    <svg class="t-flow-svg" viewBox="0 0 580 150">
+        <path d="M20 76 C60 20, 105 20, 145 76 S230 132, 270 76 S355 20, 395 76 S500 132, 560 76" fill="none" stroke="#2d5bb9" stroke-width="4"/>
+        <path d="M20 76 C80 50, 130 50, 190 76 S300 102, 360 76 S500 50, 560 76" fill="none" stroke="#c44f1c" stroke-width="3"/>
+        <circle cx="20" cy="76" r="6" fill="#2d5bb9"/><circle cx="145" cy="76" r="6" fill="#2d5bb9"/><circle cx="270" cy="76" r="6" fill="#2d5bb9"/>
+        <text x="145" y="132" class="diagram-text-sm">sin/cos nhiều tần số tạo dấu vân tay vị trí</text>
+    </svg>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.7E &middot; Add, không concat</div>
+    <h3>Vì Sao Cộng PE Vào Embedding?</h3>
+    <div class="t-compact-grid">
+        <div class="t-panel t-good"><h4>Add</h4><p>\(512 + 512 \rightarrow 512\)</p><p>Giữ nguyên kích thước để residual connection hoạt động nhất quán.</p></div>
+        <div class="t-panel t-warn"><h4>Concat</h4><p>\(512 || 512 \rightarrow 1024\)</p><p>Tăng dimension, tăng chi phí và làm lệch interface giữa các layer.</p></div>
+    </div>
+    <div class="t-callout">Trong paper gốc, sinusoidal PE được cộng trực tiếp vào token embedding.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.8A &middot; Encoder</div>
+    <h3>Encoder Self-Attention Là Unmasked</h3>
+    <p class="slide-def">Trong encoder, mọi token nguồn được nhìn toàn bộ câu nguồn, cả bên trái lẫn bên phải.</p>
+    <table class="t-mask-table"><tr><th></th><th>Tôi</th><th>đang</th><th>training</th><th>nó</th></tr><tr><th>Tôi</th><td class="t-ok">✓</td><td class="t-ok">✓</td><td class="t-ok">✓</td><td class="t-ok">✓</td></tr><tr><th>nó</th><td class="t-ok">✓</td><td class="t-ok">✓</td><td class="t-ok">✓</td><td class="t-ok">✓</td></tr></table>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.8B &middot; Add &amp; Norm</div>
+    <h3>Add &amp; Norm Giữ Training Ổn Định</h3>
+    <div class="t-chip-row"><span class="t-chip">x</span><span class="t-arrow">&rarr;</span><span class="t-chip">Sublayer(x)</span><span class="t-arrow">&rarr;</span><span class="t-chip">x + Sublayer(x)</span><span class="t-arrow">&rarr;</span><span class="t-chip">LayerNorm</span></div>
+    <div class="t-callout">Residual connection tạo đường đi tắt cho gradient; LayerNorm chuẩn hóa từng token.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.8C &middot; FFN</div>
+    <h3>FFN Xử Lý Từng Token Độc Lập</h3>
+    <div class="t-numbered-flow">
+        <div class="t-step"><span class="t-step-num">1</span><b>Token 1</b><span>512 → 2048 → 512</span></div>
+        <div class="t-step"><span class="t-step-num">2</span><b>Token 2</b><span>cùng FFN</span></div>
+        <div class="t-step"><span class="t-step-num">3</span><b>Token 3</b><span>cùng FFN</span></div>
+        <div class="t-step"><span class="t-step-num">4</span><b>Token L</b><span>song song</span></div>
+    </div>
+    <div class="t-callout">Attention trộn thông tin giữa token; FFN biến đổi phi tuyến từng vị trí.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.8D &middot; Ví dụ</div>
+    <h3>Ví Dụ Encoder: “nó” Tham Chiếu “mạng nơ-ron”</h3>
+    <div class="t-token-line"><span class="t-token">Tôi</span><span class="t-token">đang</span><span class="t-token hot">training mạng nơ-ron</span><span class="t-token">bằng dữ liệu</span><span class="t-token hot">nó</span><span class="t-token">có tốt không</span></div>
+    <table class="t-heatmap"><tr><th>Query: nó</th><th>nó</th><th>dữ liệu</th><th>mạng nơ-ron</th><th>khác</th></tr><tr><th>attention</th><td class="t-h1">0.05</td><td class="t-h0">0.01</td><td class="t-h4">0.85</td><td class="t-h1">0.09</td></tr></table>
+    <div class="t-vector-row"><div class="t-vector-card"><b>Before</b><span>“nó” = đại từ chung chung</span></div><div class="t-vector-card t-enc"><b>After encoder</b><span>“nó” mang ngữ cảnh mạng nơ-ron</span></div></div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.9A &middot; Decoder</div>
+    <h3>Decoder Dùng Shifted-Right Target</h3>
+    <div class="t-compact-grid">
+        <div class="t-panel"><h4>Target thật</h4><p>Tôi yêu mèo</p></div>
+        <div class="t-panel t-dec"><h4>Decoder input</h4><p>&lt;START&gt; Tôi yêu</p></div>
+    </div>
+    <div class="t-callout">Ở bước hiện tại, decoder chỉ được dùng các token đã có trước đó.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.9B &middot; Mask</div>
+    <h3>Masked Self-Attention Chặn Tương Lai</h3>
+    <div class="t-compact-grid">
+        <div>
+            <div class="t-mini-label">Pre-softmax + mask</div>
+            <table class="t-mask-table">
+                <tr><th>Q\K</th><th>&lt;S&gt;</th><th>Tôi</th><th>yêu</th><th>mèo</th></tr>
+                <tr><th>&lt;S&gt;</th><td class="t-ok">1.4</td><td class="t-no">masked</td><td class="t-no">masked</td><td class="t-no">masked</td></tr>
+                <tr><th>Tôi</th><td class="t-ok">0.8</td><td class="t-ok">1.6</td><td class="t-no">masked</td><td class="t-no">masked</td></tr>
+                <tr><th>yêu</th><td class="t-ok">0.7</td><td class="t-ok">1.2</td><td class="t-ok">1.7</td><td class="t-no">masked</td></tr>
+                <tr><th>mèo</th><td class="t-ok">0.4</td><td class="t-ok">0.9</td><td class="t-ok">1.1</td><td class="t-ok">1.8</td></tr>
+            </table>
+        </div>
+        <div>
+            <div class="t-mini-label">After row-wise softmax</div>
+            <table class="t-mask-table">
+                <tr><th>Q\K</th><th>&lt;S&gt;</th><th>Tôi</th><th>yêu</th><th>mèo</th></tr>
+                <tr><th>&lt;S&gt;</th><td class="t-ok">1.00</td><td class="t-no">blocked</td><td class="t-no">blocked</td><td class="t-no">blocked</td></tr>
+                <tr><th>Tôi</th><td class="t-ok">0.31</td><td class="t-ok">0.69</td><td class="t-no">blocked</td><td class="t-no">blocked</td></tr>
+                <tr><th>yêu</th><td class="t-ok">0.18</td><td class="t-ok">0.31</td><td class="t-ok">0.51</td><td class="t-no">blocked</td></tr>
+                <tr><th>mèo</th><td class="t-ok">0.12</td><td class="t-ok">0.20</td><td class="t-ok">0.25</td><td class="t-ok">0.43</td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="t-callout">Future token bị loại khỏi phân phối; các ô còn lại được normalize lại. Không dùng số 0 cho ô hợp lệ.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.9C &middot; Cross-attention</div>
+    <h3>Cross-Attention Qua Từng Bước Dịch</h3>
+    <p class="slide-def">Mỗi target token dùng Query khác nhau để nhìn lại encoder memory của `I love cats`.</p>
+    <table class="t-heatmap" style="margin-top:14px;" aria-label="Cross attention by decoding step">
+        <tr><th>Target step \ Source</th><th>I</th><th>love</th><th>cats</th></tr>
+        <tr><th>sinh “Tôi”</th><td class="t-h4">0.82</td><td class="t-h1">0.12</td><td class="t-h0">0.06</td></tr>
+        <tr><th>sinh “yêu”</th><td class="t-h0">0.08</td><td class="t-h4">0.84</td><td class="t-h0">0.08</td></tr>
+        <tr><th>sinh “mèo”</th><td class="t-h0">0.05</td><td class="t-h1">0.15</td><td class="t-h4">0.80</td></tr>
+    </table>
+    <div class="t-callout">Khi sinh “Tôi”, decoder nhìn mạnh vào “I”; khi sinh “yêu”, nhìn “love”; khi sinh “mèo”, nhìn “cats”. Đây là soft alignment trong decoder.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.9D &middot; Ví dụ</div>
+    <h3>Linear + Softmax Sinh “mèo”</h3>
+    <div class="t-prob-bars">
+        <div class="t-prob-row best"><b>mèo</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 89%;"></div></div><span>0.89</span></div>
+        <div class="t-prob-row"><b>chó</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 6%;"></div></div><span>0.06</span></div>
+        <div class="t-prob-row"><b>nhà</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 3%;"></div></div><span>0.03</span></div>
+        <div class="t-prob-row"><b>xe</b><div class="t-prob-track"><div class="t-prob-fill" style="width: 2%;"></div></div><span>0.02</span></div>
+    </div>
+    <div class="t-chip-row"><span class="t-chip">&lt;S&gt; Tôi yêu</span><span class="t-arrow">&rarr;</span><span class="t-chip">mèo</span></div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.10A &middot; Recap</div>
+    <h3>Architecture Map</h3>
+    <div class="t-numbered-flow">
+        <div class="t-step"><span class="t-step-num">1</span><b>Source</b><span>I love cats</span></div>
+        <div class="t-step"><span class="t-step-num">2</span><b>Encoder</b><span>self-attention</span></div>
+        <div class="t-step"><span class="t-step-num">3</span><b>Memory</b><span>H</span></div>
+        <div class="t-step"><span class="t-step-num">4</span><b>Target</b><span>&lt;S&gt; Tôi yêu</span></div>
+        <div class="t-step"><span class="t-step-num">5</span><b>Mask</b><span>không nhìn tương lai</span></div>
+        <div class="t-step"><span class="t-step-num">6</span><b>Cross</b><span>hỏi encoder</span></div>
+        <div class="t-step"><span class="t-step-num">7</span><b>Softmax</b><span>xác suất token</span></div>
+        <div class="t-step"><span class="t-step-num">8</span><b>Output</b><span>mèo</span></div>
+    </div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">3.10B &middot; Recap</div>
+    <h3>Chốt Phần Kiến Trúc</h3>
+    <table class="compare-table" style="font-size:0.50em;">
+        <thead><tr><th>Component</th><th>Làm gì</th><th>Ví dụ trực quan</th></tr></thead>
+        <tbody>
+            <tr><td>Q-K-V</td><td>Tách nhu cầu, nhãn so khớp, nội dung</td><td>it hỏi animal</td></tr>
+            <tr><td>Scaled Dot-Product</td><td>Tạo heatmap attention</td><td>love attend cats</td></tr>
+            <tr><td>Multi-Head</td><td>Nhiều góc nhìn song song</td><td>it→animal, it→tired</td></tr>
+            <tr><td>Positional Encoding</td><td>Thêm tín hiệu thứ tự</td><td>dog ở vị trí 0 khác dog ở vị trí 2</td></tr>
+            <tr><td>Encoder / Decoder</td><td>Hiểu source, sinh target</td><td>I love cats → Tôi yêu mèo</td></tr>
+        </tbody>
+    </table>
+    <div class="t-callout">Từ đây có thể chuyển sang phần huấn luyện và kết quả: kiến trúc này học nhanh hơn và đạt chất lượng tốt hơn như thế nào?</div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 5: Huấn luyện và kết quả
+     ================================================================ -->
+<section class="post-transformer aligned-stack">
+
+<section class="section-divider" data-background-color="#faf8f5">
+    <div class="section-num">4.</div>
+    <div class="section-title">HUẤN LUYỆN<br>VÀ KẾT QUẢ</div>
+    <div class="section-subtitle">Transformer không chỉ đẹp về kiến trúc,<br>mà còn thắng bằng thực nghiệm.</div>
+    <div class="pt-flow" aria-hidden="true">
+        <span class="box">Architecture</span><span class="arrow">↓</span>
+        <span class="box">Training Recipe</span><span class="arrow">↓</span>
+        <span class="box">Results</span><span class="arrow">↓</span>
+        <span class="box">Ablation</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.1 &middot; Training setup</div>
+    <h3>Training Setup: Mô Hình Học Như Thế Nào?</h3>
+    <p class="slide-def">Training Transformer trong dịch máy là học xác suất chuỗi đích dựa trên source và các target token trước đó.</p>
+
+    <div class="pt-token-row">
+        <div class="label">Source</div>
+        <div class="pt-token">I</div><div class="pt-token">love</div><div class="pt-token">cats</div><div></div>
+        <div class="label">Decoder input</div>
+        <div class="pt-token">&lt;START&gt;</div><div class="pt-token">Tôi</div><div class="pt-token">yêu</div><div class="pt-token">mèo</div>
+        <div class="label">Expected output</div>
+        <div class="pt-token out">Tôi</div><div class="pt-token out">yêu</div><div class="pt-token out">mèo</div><div class="pt-token out">&lt;END&gt;</div>
+    </div>
+
+    <div class="pt-callout">Mỗi vị trí trong decoder học dự đoán token tiếp theo. Khi training, target đã biết sẵn nhưng masked self-attention vẫn chặn token tương lai.</div>
+
+    <aside class="notes">
+        Ở training, ta dùng teacher forcing: đưa target đã shifted-right vào decoder. Mô hình vẫn phải dùng mask để không nhìn thấy token cần dự đoán ở tương lai.
+    </aside>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.2 &middot; Optimization</div>
+    <h3>Optimization: Adam + Learning Rate Schedule</h3>
+
+    <div class="pt-grid-2">
+        <div class="pt-card pt-blue">
+            <h4>Optimizer: Adam</h4>
+            <p><strong>β₁ = 0.9</strong></p>
+            <p><strong>β₂ = 0.98</strong></p>
+            <p><strong>ε = 10⁻⁹</strong></p>
+            <p>Paper dùng Adam với tham số hơi khác mặc định phổ biến.</p>
+        </div>
+        <div class="pt-card">
+            <h4>Learning rate schedule</h4>
+            <svg class="pt-lr-svg" viewBox="0 0 420 180" role="img" aria-label="Learning rate warmup and decay curve">
+                <line x1="48" y1="140" x2="382" y2="140" stroke="#5b6678" stroke-width="2"/>
+                <line x1="48" y1="140" x2="48" y2="28" stroke="#5b6678" stroke-width="2"/>
+                <path d="M48 140 L150 48 C210 70, 285 102, 374 125" fill="none" stroke="#2d5bb9" stroke-width="5"/>
+                <line x1="150" y1="148" x2="150" y2="38" stroke="#c44f1c" stroke-width="2" stroke-dasharray="6 5"/>
+                <text x="150" y="166" class="diagram-text-sm">warmup 4000</text>
+                <text x="210" y="26" class="diagram-text-sm">learning rate</text>
+                <text x="376" y="158" class="diagram-text-sm">step</text>
+            </svg>
+        </div>
+    </div>
+
+    <div class="pt-formula">\(lrate=d_{model}^{-0.5}\cdot min(step^{-0.5}, step\cdot warmup^{-1.5})\)</div>
+    <div class="pt-callout">Warmup giúp training ổn định ở giai đoạn đầu; decay giúp mô hình hội tụ về sau.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.3 &middot; Regularization</div>
+    <h3>Regularization: Dropout + Label Smoothing</h3>
+
+    <div class="pt-grid-2">
+        <div class="pt-card pt-orange">
+            <h4>Dropout</h4>
+            <p><strong>P_drop = 0.1</strong></p>
+            <p>Áp dụng trong attention, FFN và embeddings.</p>
+            <svg class="pt-wide-svg" viewBox="0 0 360 120" aria-label="Dropout nodes">
+                <circle cx="70" cy="60" r="18" fill="#2d5bb9"/>
+                <circle cx="145" cy="60" r="18" fill="#d6d3cc"/>
+                <circle cx="220" cy="60" r="18" fill="#2d5bb9"/>
+                <circle cx="295" cy="60" r="18" fill="#2d5bb9"/>
+                <line x1="88" y1="60" x2="127" y2="60" stroke="#d6d3cc" stroke-width="4" stroke-dasharray="5 4"/>
+                <line x1="163" y1="60" x2="202" y2="60" stroke="#2d5bb9" stroke-width="4"/>
+                <line x1="238" y1="60" x2="277" y2="60" stroke="#2d5bb9" stroke-width="4"/>
+            </svg>
+        </div>
+        <div class="pt-card pt-blue">
+            <h4>Label smoothing</h4>
+            <div class="pt-grid-2" style="width:100%; gap:10px;">
+                <div>
+                    <div class="pt-mini-label">One-hot target</div>
+                    <div class="pt-prob-list">
+                        <div class="pt-prob-row"><b>mèo</b><div class="pt-prob-track"><div class="pt-prob-fill" style="width:100%;"></div></div><span>1.00</span></div>
+                        <div class="pt-prob-row"><b>chó</b><div class="pt-prob-track"><div class="pt-prob-fill" style="width:0%;"></div></div><span>0.00</span></div>
+                        <div class="pt-prob-row"><b>nhà</b><div class="pt-prob-track"><div class="pt-prob-fill" style="width:0%;"></div></div><span>0.00</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="pt-mini-label">Label smoothing</div>
+                    <div class="pt-prob-list">
+                        <div class="pt-prob-row"><b>mèo</b><div class="pt-prob-track"><div class="pt-prob-fill" style="width:90%;"></div></div><span>0.90</span></div>
+                        <div class="pt-prob-row"><b>chó</b><div class="pt-prob-track"><div class="pt-prob-fill" style="width:3%;"></div></div><span>0.03</span></div>
+                        <div class="pt-prob-row"><b>nhà</b><div class="pt-prob-track"><div class="pt-prob-fill" style="width:3%;"></div></div><span>0.03</span></div>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top:10px;"><strong>ε_ls = 0.1</strong>: giảm overconfidence.</p>
+        </div>
+    </div>
+
+    <div class="pt-callout">Dropout giảm phụ thuộc vào một đường biểu diễn. Label smoothing giảm việc mô hình quá tự tin vào một nhãn duy nhất.</div>
+    <aside class="notes">Regularization rất quan trọng trong kết quả ablation: tắt dropout làm BLEU giảm rõ rệt; tắt label smoothing có thể làm PPL tốt hơn nhưng BLEU giảm.</aside>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.4 &middot; Dataset &amp; metrics</div>
+    <h3>Dataset &amp; Metrics</h3>
+
+    <div class="pt-grid-3">
+        <div class="pt-card pt-blue">
+            <h4>WMT 2014 EN-DE</h4>
+            <p><strong>4.5M</strong> sentence pairs</p>
+            <p>~37K BPE vocabulary</p>
+        </div>
+        <div class="pt-card pt-orange">
+            <h4>WMT 2014 EN-FR</h4>
+            <p><strong>36M</strong> sentence pairs</p>
+            <p>~32K WordPiece vocabulary</p>
+        </div>
+        <div class="pt-card pt-green">
+            <h4>Metrics</h4>
+            <p><strong>BLEU</strong>: chất lượng dịch</p>
+            <p><strong>FLOPs</strong>: chi phí tính toán</p>
+            <p><strong>PPL</strong>: độ bất định</p>
+            <p><strong>F1</strong>: parsing</p>
+        </div>
+    </div>
+
+    <div class="pt-callout">Kết quả không chỉ đo chất lượng, mà còn đo chi phí tính toán và khả năng tổng quát.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.5A &middot; Main results</div>
+    <h3>Main Results: BLEU Và Training Cost</h3>
+
+    <div class="pt-grid-3">
+        <div class="pt-card pt-score pt-blue">
+            <span class="num">28.4</span>
+            <span class="caption">BLEU<br>WMT 2014 EN-DE<br>Transformer-big</span>
+        </div>
+        <div class="pt-card pt-score pt-green">
+            <span class="num">41.8</span>
+            <span class="caption">BLEU<br>WMT 2014 EN-FR<br>Transformer-big</span>
+        </div>
+        <div class="pt-card pt-score pt-orange">
+            <span class="num">12h / 3.5d</span>
+            <span class="caption">Transformer-base / big<br>training cost<br>on 8 P100 GPUs</span>
+        </div>
+    </div>
+
+    <div class="pt-callout">Transformer đạt chất lượng dịch cao, đồng thời tận dụng song song hóa để giảm chi phí training.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.5B &middot; So sánh với mô hình trước đó</div>
+    <h3>Main Results: Transformer So Với Các Model Khác</h3>
+    <p class="pt-paper-caption">Bảng kết quả trong paper cho thấy Transformer cải thiện BLEU trên WMT 2014, đồng thời dùng chi phí huấn luyện thấp hơn nhiều hệ ensemble trước đó.</p>
+
+    <table class="pt-table pt-paper-table">
+        <thead>
+            <tr>
+                <th rowspan="2">Model</th>
+                <th colspan="2">BLEU</th>
+                <th colspan="2">Training Cost (FLOPs)</th>
+            </tr>
+            <tr>
+                <th>EN-DE</th>
+                <th>EN-FR</th>
+                <th>EN-DE</th>
+                <th>EN-FR</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>ByteNet</td><td class="num">23.75</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+            <tr><td>Deep-Att + PosUnk</td><td class="num">&mdash;</td><td class="num">39.2</td><td class="num">&mdash;</td><td class="num">1.0 &middot; 10<sup>20</sup></td></tr>
+            <tr><td>GNMT + RL</td><td class="num">24.6</td><td class="num">39.92</td><td class="num">2.3 &middot; 10<sup>19</sup></td><td class="num">1.4 &middot; 10<sup>20</sup></td></tr>
+            <tr><td>ConvS2S</td><td class="num">25.16</td><td class="num">40.46</td><td class="num">9.6 &middot; 10<sup>18</sup></td><td class="num">1.5 &middot; 10<sup>20</sup></td></tr>
+            <tr><td>MoE</td><td class="num">26.03</td><td class="num">40.56</td><td class="num">2.0 &middot; 10<sup>19</sup></td><td class="num">1.2 &middot; 10<sup>20</sup></td></tr>
+            <tr class="group-sep"><td>Deep-Att + PosUnk Ensemble</td><td class="num">&mdash;</td><td class="num">40.4</td><td class="num">&mdash;</td><td class="num">8.0 &middot; 10<sup>20</sup></td></tr>
+            <tr><td>GNMT + RL Ensemble</td><td class="num">26.30</td><td class="num">41.16</td><td class="num">1.8 &middot; 10<sup>20</sup></td><td class="num">1.1 &middot; 10<sup>21</sup></td></tr>
+            <tr><td>ConvS2S Ensemble</td><td class="num">26.36</td><td class="num">41.29</td><td class="num">7.7 &middot; 10<sup>19</sup></td><td class="num">1.2 &middot; 10<sup>21</sup></td></tr>
+            <tr class="transformer group-sep"><td>Transformer (base)</td><td class="num">27.3</td><td class="num">38.1</td><td class="num">3.3 &middot; 10<sup>18</sup></td><td class="num">&mdash;</td></tr>
+            <tr class="transformer"><td>Transformer (big)</td><td class="num">28.4</td><td class="num">41.8</td><td class="num">2.3 &middot; 10<sup>19</sup></td><td class="num">&mdash;</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pt-callout">Điểm đáng chú ý: Transformer-big đạt BLEU cao nhất, còn Transformer-base đã vượt nhiều model trước đó với FLOPs thấp.</div>
+    <aside class="notes">Slide này dùng để đọc paper table ở mức cao: không cần đi từng dòng, chỉ nhấn mạnh hai dòng Transformer và nhóm ensemble có chi phí lớn.</aside>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.6 &middot; Ablation study</div>
+    <h3>Ablation Study: Thành Phần Nào Quan Trọng?</h3>
+
+    <table class="pt-table">
+        <thead><tr><th>Thay đổi</th><th>Kết quả / ý nghĩa</th></tr></thead>
+        <tbody>
+            <tr class="hl"><td>h = 1</td><td>BLEU giảm xuống 24.9: một head là không đủ.</td></tr>
+            <tr><td>h = 32, d_k = 16</td><td>BLEU 25.4: quá nhiều head làm mỗi head quá nhỏ.</td></tr>
+            <tr><td>d_k = 16</td><td>BLEU 25.1: không gian key quá hẹp.</td></tr>
+            <tr><td>d_k = 32</td><td>BLEU 25.4: vẫn thấp hơn cấu hình chuẩn.</td></tr>
+            <tr class="hl"><td>d_ff = 4096</td><td>BLEU tăng lên 26.2: FFN rộng hơn giúp biểu diễn mạnh hơn.</td></tr>
+            <tr class="hl"><td>Tắt dropout</td><td>BLEU giảm xuống 24.6: regularization là cần thiết.</td></tr>
+            <tr class="hl"><td>Tắt label smoothing</td><td>PPL tốt hơn nhưng BLEU giảm: mô hình quá tự tin không hẳn dịch tốt hơn.</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pt-callout">Multi-head attention, kích thước mô hình và regularization đều đóng vai trò quan trọng.</div>
+    <aside class="notes">Ablation study trả lời câu hỏi: nếu thay đổi từng thành phần thì chất lượng có giảm không? Kết quả cho thấy số head, d_k, d_ff, dropout và label smoothing đều ảnh hưởng rõ.</aside>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">5.7 &middot; Tổng kết</div>
+    <h3>Tổng Kết Phần Huấn Luyện Và Kết Quả</h3>
+
+    <div class="pt-grid-4">
+        <div class="pt-card pt-blue"><h4>1. Stable training</h4><p>Adam + warmup schedule giúp giai đoạn đầu ổn định hơn.</p></div>
+        <div class="pt-card pt-green"><h4>2. Generalization</h4><p>Dropout và label smoothing giúp mô hình tổng quát tốt hơn.</p></div>
+        <div class="pt-card pt-orange"><h4>3. Strong results</h4><p>Transformer-big đạt 28.4 BLEU EN-DE và 41.8 BLEU EN-FR.</p></div>
+        <div class="pt-card pt-yellow"><h4>4. Ablation</h4><p>Multi-head, d_k, d_ff và regularization đều quan trọng.</p></div>
+    </div>
+    <div class="pt-flow"><span class="box">Architecture</span><span class="arrow">+</span><span class="box">Training recipe</span><span class="arrow">+</span><span class="box">Results</span><span class="arrow">→</span><span class="box">Modern LLMs</span></div>
+    <div class="pt-callout">Từ đây, Transformer không chỉ là một model dịch máy, mà trở thành nền tảng cho các mô hình ngôn ngữ hiện đại.</div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 6: Phân tích và tác động
+     ================================================================ -->
+<section class="post-transformer aligned-stack">
+
+<section class="section-divider" data-background-color="#faf8f5">
+    <div class="section-num">5.</div>
+    <div class="section-title">PHÂN TÍCH<br>VÀ TÁC ĐỘNG</div>
+    <div class="section-subtitle">Từ một kiến trúc dịch máy<br>đến nền tảng của LLM hiện đại.</div>
+    <div class="pt-flow" aria-hidden="true">
+        <span class="box">Transformer 2017</span><span class="arrow">↓</span>
+        <span class="box">BERT / GPT / T5</span><span class="arrow">↓</span>
+        <span class="box">Modern LLMs</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">6.1 &middot; Ưu điểm</div>
+    <h3>Ưu Điểm Của Transformer</h3>
+
+    <table class="pt-table">
+        <thead><tr><th>Ưu điểm</th><th>Ý nghĩa</th></tr></thead>
+        <tbody>
+            <tr><td>Parallelization</td><td>Không phụ thuộc tuần tự như RNN; phù hợp phép nhân ma trận lớn.</td></tr>
+            <tr><td>Short path length</td><td>Mọi token kết nối trực tiếp qua attention.</td></tr>
+            <tr><td>Multi-head attention</td><td>Học nhiều kiểu quan hệ cùng lúc.</td></tr>
+            <tr><td>Interpretability</td><td>Có thể trực quan hóa attention weights.</td></tr>
+            <tr><td>Scalability</td><td>Tăng dữ liệu/tham số/tính toán thường cải thiện hiệu năng.</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pt-flow">
+        <span class="box">RNN: token 1 → token 2 → token 3 → token 4</span>
+        <span class="arrow">vs</span>
+        <span class="box">Transformer: token 1 ↔ token 4</span>
+    </div>
+    <div class="pt-callout">Transformer phù hợp với GPU vì phần lớn tính toán là phép nhân ma trận lớn.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">6.2 &middot; Giới hạn</div>
+    <h3>Nhược Điểm Và Giới Hạn</h3>
+
+    <div class="pt-grid-2">
+        <div class="pt-card pt-orange">
+            <h4>Chi phí attention tăng nhanh</h4>
+            <ul>
+                <li>Self-attention xét mọi cặp token.</li>
+                <li>Tốn GPU/VRAM khi context dài.</li>
+                <li>Huấn luyện mô hình lớn đắt đỏ.</li>
+                <li>Nhạy với hyperparameters và regularization.</li>
+            </ul>
+        </div>
+        <div class="pt-card">
+            <h4>Attention matrix lớn dần</h4>
+            <div class="pt-matrix-row">
+                <div><div class="pt-grid-icon" style="--n:4;"> <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><p style="text-align:center;">n=4<br>16 scores</p></div>
+                <div><div class="pt-grid-icon" style="--n:8;"> <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><p style="text-align:center;">n=8<br>64 scores</p></div>
+                <div><div class="pt-grid-icon large" style="--n:8;"> <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><p style="text-align:center;">n=1024<br>~1M scores</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pt-callout">Điểm mạnh attention cũng là điểm tốn kém: mọi token nhìn mọi token.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">6.3 &middot; Scaling</div>
+    <h3>Vì Sao Transformer Scale Tốt?</h3>
+
+    <div class="pt-grid-2">
+        <div class="pt-card pt-green">
+            <h4>Lý do kiến trúc</h4>
+            <ul>
+                <li>Computation dạng matrix multiplication.</li>
+                <li>Không có sequential bottleneck như RNN.</li>
+                <li>Có thể tăng depth, width, heads và data.</li>
+                <li>Self-attention học quan hệ xa hiệu quả.</li>
+                <li>Phù hợp GPU/TPU và distributed training.</li>
+            </ul>
+        </div>
+        <div class="pt-card pt-blue">
+            <h4>Model size trajectory</h4>
+            <div class="pt-flow" style="width:100%; margin-top:0.4em;">
+                <span class="box">65M<br>base</span>
+                <span class="arrow">→</span>
+                <span class="box">213M<br>big</span>
+                <span class="arrow">→</span>
+                <span class="box">billions</span>
+                <span class="arrow">→</span>
+                <span class="box">trillions</span>
+            </div>
+            <p>Transformer mở đường cho scaling law: tăng data, compute và model size thường làm mô hình mạnh hơn.</p>
+        </div>
+    </div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">6.4 &middot; Transformer family</div>
+    <h3>Từ Transformer Gốc Đến Các Họ Mô Hình Hiện Đại</h3>
+
+    <svg class="pt-wide-svg" viewBox="0 0 920 320" role="img" aria-label="Transformer family tree">
+        <rect x="330" y="30" width="260" height="50" rx="10" fill="#eef4ff" stroke="#9ab2df"/>
+        <text x="460" y="62" class="diagram-text">Original Transformer</text>
+        <line x1="460" y1="80" x2="460" y2="120" stroke="#2d5bb9" stroke-width="3"/>
+        <line x1="200" y1="120" x2="720" y2="120" stroke="#2d5bb9" stroke-width="3"/>
+        <line x1="200" y1="120" x2="200" y2="165" stroke="#2d5bb9" stroke-width="3"/>
+        <line x1="460" y1="120" x2="460" y2="165" stroke="#2d5bb9" stroke-width="3"/>
+        <line x1="720" y1="120" x2="720" y2="165" stroke="#2d5bb9" stroke-width="3"/>
+        <rect x="85" y="165" width="230" height="72" rx="10" fill="#eef8f1" stroke="#9ccdaa"/>
+        <text x="200" y="195" class="diagram-text">Encoder-only</text>
+        <text x="200" y="219" class="diagram-text-sm">BERT</text>
+        <rect x="345" y="165" width="230" height="72" rx="10" fill="#fff2e8" stroke="#deb08f"/>
+        <text x="460" y="195" class="diagram-text">Decoder-only</text>
+        <text x="460" y="219" class="diagram-text-sm">GPT</text>
+        <rect x="605" y="165" width="230" height="72" rx="10" fill="#fff7d6" stroke="#d5a83d"/>
+        <text x="720" y="195" class="diagram-text">Encoder-Decoder</text>
+        <text x="720" y="219" class="diagram-text-sm">T5 / mT5</text>
+    </svg>
+
+    <div class="pt-callout">Cùng một ý tưởng Transformer, nhưng có thể tái cấu hình cho nhiều loại nhiệm vụ khác nhau.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">6.5 &middot; Architecture variants</div>
+    <h3>Encoder-only, Decoder-only, Encoder–Decoder</h3>
+
+    <table class="pt-table">
+        <thead><tr><th>Kiến trúc</th><th>Ví dụ</th><th>Cách học</th><th>Phù hợp với</th></tr></thead>
+        <tbody>
+            <tr><td>Encoder-only</td><td>BERT</td><td>Masked language modeling</td><td>Hiểu câu, classification, retrieval</td></tr>
+            <tr><td>Decoder-only</td><td>GPT</td><td>Autoregressive language modeling</td><td>Sinh văn bản, chat, completion</td></tr>
+            <tr><td>Encoder–Decoder</td><td>T5 / mT5</td><td>Text-to-text</td><td>Dịch, tóm tắt, QA có input-output rõ</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pt-grid-3" style="margin-top:16px;">
+        <div class="pt-card pt-green"><h4>BERT</h4><p>[Encoder Stack]</p></div>
+        <div class="pt-card pt-orange"><h4>GPT</h4><p>[Decoder Stack]</p></div>
+        <div class="pt-card pt-yellow"><h4>T5</h4><p>[Encoder] → [Decoder]</p></div>
+    </div>
+    <div class="pt-callout">Không phải LLM nào cũng dùng toàn bộ Encoder–Decoder gốc. Nhiều mô hình hiện đại chỉ dùng một phần của kiến trúc.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">6.6 &middot; Modern improvements</div>
+    <h3>Các Cải Tiến Hiện Đại</h3>
+
+    <table class="pt-table">
+        <thead><tr><th>Cải tiến</th><th>Ý tưởng</th></tr></thead>
+        <tbody>
+            <tr><td>RoPE</td><td>Positional encoding tốt hơn cho context dài.</td></tr>
+            <tr><td>Grouped Query Attention</td><td>Giảm chi phí KV cache.</td></tr>
+            <tr><td>FlashAttention</td><td>Tính attention tiết kiệm bộ nhớ hơn.</td></tr>
+            <tr><td>MoE</td><td>Chỉ kích hoạt một phần expert để scale hiệu quả.</td></tr>
+            <tr><td>Long-context attention</td><td>Xử lý chuỗi dài hơn.</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pt-flow">
+        <span class="box">Transformer core</span><span class="arrow">+</span>
+        <span class="box">better position</span><span class="arrow">+</span>
+        <span class="box">efficient attention</span><span class="arrow">+</span>
+        <span class="box">MoE</span><span class="arrow">→</span>
+        <span class="box">Modern LLMs</span>
+    </div>
+    <div class="pt-callout">Kiến trúc hiện đại không bỏ Transformer, mà tối ưu các điểm nghẽn của nó.</div>
+</section>
+
+<section data-background-color="#faf8f5">
+    <div class="slide-label">6.7 &middot; Tổng kết</div>
+    <h3>Vì Sao Transformer Trở Thành Nền Tảng LLM?</h3>
+
+    <div class="pt-grid-3">
+        <div class="pt-card pt-blue"><h4>Parallel</h4><p>Loại bỏ recurrence, train song song hơn.</p></div>
+        <div class="pt-card pt-green"><h4>Long-range</h4><p>Self-attention học quan hệ xa trực tiếp.</p></div>
+        <div class="pt-card pt-yellow"><h4>Multi-pattern</h4><p>Multi-head học nhiều pattern cùng lúc.</p></div>
+        <div class="pt-card pt-orange"><h4>Scaling</h4><p>Nhiều data/compute/model size thường mạnh hơn.</p></div>
+        <div class="pt-card"><h4>Flexible</h4><p>Sinh ra BERT, GPT, T5 và nhiều LLM hiện đại.</p></div>
+        <div class="pt-card pt-blue"><h4>Core idea</h4><p>Attention trở thành nguyên lý tổ chức của mô hình ngôn ngữ.</p></div>
+    </div>
+
+    <div class="pt-flow">
+        <span class="box">Seq2Seq</span><span class="arrow">→</span>
+        <span class="box">Bahdanau Attention</span><span class="arrow">→</span>
+        <span class="box">Transformer</span><span class="arrow">→</span>
+        <span class="box">BERT / GPT / T5</span><span class="arrow">→</span>
+        <span class="box">Modern LLMs</span>
+    </div>
+    <div class="pt-callout"><strong>Attention is not only a mechanism.</strong> It became the organizing principle of modern language models.</div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     END OF SLIDES
+     ================================================================ -->
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/notes/notes.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/markdown/markdown.min.js"></script>
@@ -84,14 +3248,18 @@ def sigmoid(x):
     <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/math/math.min.js"></script>
 
     <script>
-        // Cấu hình khởi tạo Slide
         Reveal.initialize({
-            hash: true, // Tự động đổi URL khi chuyển slide để chia sẻ được link slide cụ thể
-            controls: true, // Hiện nút điều hướng góc dưới phải
-            progress: true, // Thanh tiến trình ở đáy màn hình
-            center: true, // Căn giữa nội dung slide
-            
-            // Kích hoạt các tính năng nâng cao giống trang mẫu
+            hash: true,
+            controls: true,
+            progress: true,
+            center: true,
+            transition: 'slide',
+            backgroundTransition: 'fade',
+            width: 1400,
+            height: 800,
+            margin: 0.05,
+            minScale: 0.2,
+            maxScale: 1.2,
             plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.MathJax3 ]
         });
     </script>

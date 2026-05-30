@@ -1,0 +1,102 @@
+- application [ref=e2]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - img
+        - generic:
+          - heading [level=1]: Transformer
+          - generic: Attention Is All You Need
+          - generic: Vaswani et al., 2017 · NeurIPS
+          - generic: From sequence modeling to attention-based architectures
+        - generic: ▼
+      - generic:
+        - generic:
+          - heading [level=3]: Nội dung
+          - generic:
+            - generic: "1."
+            - generic: Bối cảnh ra đời Transformer
+          - generic:
+            - generic: "2."
+            - generic: Attention trước Transformer
+          - generic:
+            - generic: "3."
+            - generic: Kiến trúc Transformer
+          - generic:
+            - generic: "4."
+            - generic: Training & kết quả thực nghiệm
+          - generic:
+            - generic: "5."
+            - generic: Tác động đến LLM hiện đại
+        - paragraph: "Phần hiện tại: Chương 1"
+    - generic:
+      - generic [ref=e350]:
+        - generic [ref=e351]: "1."
+        - generic [ref=e352]:
+          - text: BỐI CẢNH RA ĐỜI
+          - text: TRANSFORMER
+        - generic [ref=e353]: Từ bài toán chuỗi đến giới hạn của RNN/LSTM
+        - generic [ref=e354]:
+          - generic [ref=e355]: DNN
+          - generic [ref=e356]: →
+          - generic [ref=e357]: Seq2Seq
+          - generic [ref=e358]: →
+          - generic [ref=e359]: RNN/LSTM
+          - generic [ref=e360]: →
+          - generic [ref=e361]: Attention
+          - generic [ref=e362]: →
+          - generic [ref=e363]: Transformer
+        - generic: ▼
+      - generic:
+        - generic: 2.1 · Bài toán
+        - heading [level=3]: Sequence Transduction
+        - generic: Ánh xạ một chuỗi đầu vào thành một chuỗi đầu ra
+        - img:
+          - generic: I
+          - generic: love
+          - generic: machine
+          - generic: learning
+          - generic: Tôi
+          - generic: yêu
+          - generic: học
+          - generic: máy
+        - list:
+          - listitem:
+            - text: Input / output có
+            - strong: độ dài thay đổi
+          - listitem:
+            - strong: Thứ tự token
+            - text: rất quan trọng
+          - listitem:
+            - strong: Quan hệ xa
+            - text: trong câu cần được giữ lại
+        - generic: "DNN truyền thống không phù hợp: yêu cầu input/output có kích thước cố định, trong khi ngôn ngữ là chuỗi có độ dài biến đổi."
+      - generic:
+        - generic: 2.2 · Kiến trúc
+        - heading [level=3]: "Seq2Seq: Encoder–Decoder"
+        - img:
+          - generic: x₁
+          - generic: x₂
+          - generic: x₃
+          - generic: x₄
+          - generic: Input
+          - generic: Encoder
+          - generic: c
+          - generic: Decoder
+          - generic: y₁
+          - generic: y₂
+          - generic: y₃
+          - generic: Output
+        - generic:
+          - generic:
+            - strong: ✓
+            - text: Xử lý được chuỗi có độ dài khác nhau
+          - generic:
+            - strong: ✗
+            - text: Toàn bộ input bị nén vào một vector cố định
+      - text: h t = f W ( h t − 1 , x t ) h t = f W ( h t − 1 , x t ) h t h t t t x t x t h t − 1 h t − 1 h t h t h t h t h t − 1 h t − 1 ▸ ▸ ▸ h t h t h t − 1 h t − 1
+  - complementary:
+    - button "previous slide" [ref=e180] [cursor=pointer]
+    - button "below slide" [ref=e184] [cursor=pointer]
+  - text: Speaker notes
+  - generic [ref=e188]: 1. BỐI CẢNH RA ĐỜI TRANSFORMER Từ bài toán chuỗi đến giới hạn của RNN/LSTM DNN → Seq2Seq → RNN/LSTM → Attention → Transformer ▼
