@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Slide Giới Thiệu Khóa Học</title>
+
+    <!-- Nhúng CSS của Reveal.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    
+    <!-- Chọn Theme (Giao diện trắng giống link mẫu) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/white.min.css">
+
+    <!-- Nhúng theme cho phần Code highlight nếu có code lập trình -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/monokai.min.css">
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- SLIDE 1: Slide Tiêu Đề -->
+            <section>
+                <h2>Machine Learning Course</h2>
+                <p style="color: grey;">Lecture 01a: Course Introduction</p>
+                <p><small>Giảng viên: Nguyễn Văn A</small></p>
+            </section>
+
+            <!-- SLIDE 2: Chuyển slide theo chiều ngang -->
+            <section>
+                <h3>1. Mục tiêu khóa học</h3>
+                <ul>
+                    <li>Cung cấp kiến thức nền tảng về AI/ML.</li>
+                    <li>Thực hành các thuật toán kinh điển bằng Python.</li>
+                    <li>Triển khai bài toán thực tế.</li>
+                </ul>
+            </section>
+
+            <!-- SLIDE 3: Slide lồng nhau (Bấm nút XUỐNG để xem) -->
+            <section>
+                <section>
+                    <h3>2. Nội dung chi tiết</h3>
+                    <p>Slide này có nội dung phụ bên dưới (Bấm mũi tên đi xuống 👇)</p>
+                </section>
+                <section>
+                    <h4>Tuần 1: Linear Regression</h4>
+                    <p>Tìm hiểu về hồi quy tuyến tính và Gradient Descent.</p>
+                </section>
+                <section>
+                    <h4>Tuần 2: Logistic Regression</h4>
+                    <p>Bài toán phân loại (Classification).</p>
+                </section>
+            </section>
+
+            <!-- SLIDE 4: Hiển thị code lập trình -->
+            <section>
+                <h3>Ví dụ code Python</h3>
+                <pre><code class="language-python" data-trim data-line-numbers>
+import numpy as np
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+                </code></pre>
+            </section>
+
+            <!-- SLIDE 5: Viết công thức toán học dạng LaTeX giống link mẫu -->
+            <section>
+                <h3>Hàm lỗi (Loss Function)</h3>
+                <p>Công thức Mean Squared Error (MSE):</p>
+                <div style="font-size: 1.2em; padding: 20px;">
+                    $$J(\theta) = \frac{1}{2m} \sum_{i=1}^{m} (h_\theta(x^{(i)}) - y^{(i)})^2$$
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Nhúng JS của Reveal.js và các Plugin cần thiết -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/notes/notes.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/math/math.min.js"></script>
+
+    <script>
+        // Cấu hình khởi tạo Slide
+        Reveal.initialize({
+            hash: true, // Tự động đổi URL khi chuyển slide để chia sẻ được link slide cụ thể
+            controls: true, // Hiện nút điều hướng góc dưới phải
+            progress: true, // Thanh tiến trình ở đáy màn hình
+            center: true, // Căn giữa nội dung slide
+            
+            // Kích hoạt các tính năng nâng cao giống trang mẫu
+            plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.MathJax3 ]
+        });
+    </script>
+</body>
+</html>
