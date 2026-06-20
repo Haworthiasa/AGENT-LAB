@@ -20,9 +20,9 @@
         </header>
 
         <article class="blog-content">
-            <h1>1. Tóm tắt (Executive Summary)</h1>
+            <h1>1. Tóm tắt</h1>
 
-            <h3>Bối cảnh (Background)</h3>
+            <h3>Bối cảnh</h3>
             <ul>
                 <li><strong>Tư duy Task-specific thống trị:</strong> Ngành NLP bị kìm hãm bởi việc thiết kế các hệ thống AI chuyên biệt, phụ thuộc hoàn toàn vào kiến trúc và dữ liệu gán nhãn riêng cho từng nhiệm vụ.</li>
                 <li><strong>Không thể tái sử dụng:</strong> Một mô hình được huấn luyện cho tác vụ này (ví dụ: phân loại văn bản) gần như không thể áp dụng cho tác vụ khác (ví dụ: trả lời câu hỏi).</li>
@@ -34,7 +34,7 @@
                 <figcaption>Lộ trình phát triển từ mô hình word2vec tĩnh đến GPT-1 — bước chuyển từ biểu diễn từ cô lập sang mô hình ngôn ngữ tiền huấn luyện tổng quát.</figcaption>
             </figure>
 
-            <h3>Giải pháp cốt lõi (Core Solution)</h3>
+            <h3>Giải pháp cốt lõi</h3>
             <ul>
                 <li><strong>Phương pháp Generative Pre-Training (GPT):</strong> Đề xuất quy trình hai giai đoạn độc lập thay vì huấn luyện riêng biệt từ đầu:
                     <ul>
@@ -44,7 +44,7 @@
                 </li>
             </ul>
 
-            <h3>Tác động thực tiễn (Practical Impact)</h3>
+            <h3>Tác động thực tiễn</h3>
             <ul>
                 <li><strong>Tối giản kiến trúc:</strong> Cho phép một cấu trúc mô hình duy nhất xử lý đa dạng tác vụ với những thay đổi tối thiểu.</li>
                 <li><strong>Bước chuyển dịch cách mạng:</strong> Thay đổi tư duy từ "xây dựng mô hình mới cho mỗi bài toán" sang "huấn luyện một mô hình tổng quát để hiểu ngôn ngữ, sau đó tái sử dụng linh hoạt".</li>
@@ -52,15 +52,15 @@
 
             <hr>
 
-            <h1>2. Mục đích nghiên cứu (Goals of the Paper)</h1>
+            <h1>2. Mục đích nghiên cứu</h1>
 
-            <h3>Động lực nghiên cứu (Motivation)</h3>
+            <h3>Động lực nghiên cứu</h3>
             <ul>
                 <li><strong>Khan hiếm dữ liệu nhãn:</strong> Các mô hình đương thời phụ thuộc nặng nề vào dữ liệu gán nhãn thủ công – nguồn tài nguyên vốn tốn kém và thường không đủ cho các tác vụ đặc thù.</li>
                 <li><strong>Kiến trúc cô lập:</strong> Các mô hình thường được thiết kế "đo ni đóng giày" cho một tác vụ duy nhất, không có khả năng thích ứng hoặc tái sử dụng.</li>
             </ul>
 
-            <h3>Mục tiêu cụ thể (Specific Objectives)</h3>
+            <h3>Mục tiêu cụ thể</h3>
             <ul>
                 <li><strong>Tận dụng dữ liệu thô:</strong> Chuyển dịch sang phương pháp tổng quát, khai thác nguồn văn bản thô vô tận trên Internet để học các biểu diễn ngôn ngữ chất lượng cao.</li>
                 <li><strong>Hiện thực hóa Học chuyển giao (Transfer Learning):</strong> Khai thác tri thức nền tảng từ giai đoạn tiền huấn luyện không giám sát để áp dụng hiệu quả vào các tác vụ đích.</li>
@@ -156,6 +156,10 @@
             </figure>
 
             <h3>4.2 Tác vụ trả lời câu hỏi và Suy luận thực tế (QA &amp; Commonsense Reasoning)</h3>
+                <figure>
+                    <img src="assets/QA.png" alt="Cách biến đổi đầu vào cho tác vụ QA và Commonsense Reasoning">
+                    <figcaption>Biến đổi đầu vào cho tác vụ QA và Commonsense Reasoning — nối ngữ cảnh, câu hỏi và từng đáp án ứng viên thành chuỗi phẳng.</figcaption>
+                </figure>
             <ul>
                 <li><strong>Cách biến đổi đầu vào:</strong> Nối ngữ cảnh ($z$) và câu hỏi ($q$) với <strong>từng câu trả lời ứng viên $a_k$ độc lập</strong>:
                     $$\text{[&lt;s&gt;; } z \text{; } q \text{; \$; } a_k \text{; &lt;e&gt;]}$$
@@ -218,7 +222,7 @@
 
             <hr>
 
-            <h1>5. Phân tích thực nghiệm (Analysis &amp; Ablation Study)</h1>
+            <h1>5. Phân tích thực nghiệm</h1>
 
             <ul>
                 <li><strong>Số lượng tầng chuyển giao:</strong> Hiệu suất tăng tỉ lệ thuận với số lượng tầng Transformer được tái sử dụng từ giai đoạn pre-training.</li>
@@ -246,7 +250,7 @@
 
             <hr>
 
-            <h1>6. Kết luận (Conclusion)</h1>
+            <h1>6. Kết luận</h1>
 
             <p><em>GPT-1 đã đặt nền móng cho kỷ nguyên của các mô hình ngôn ngữ lớn (LLMs) bằng cách chứng minh rằng việc tiền huấn luyện trên dữ liệu khổng lồ, kết hợp với kiến trúc Transformer và tinh chỉnh có giám sát, có thể tạo ra một hệ thống hiểu ngôn ngữ tổng quát mạnh mẽ vượt xa các mô hình chuyên biệt trước đó.</em></p>
         </article>
