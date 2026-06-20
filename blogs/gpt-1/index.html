@@ -22,17 +22,17 @@
         <article class="blog-content">
             <h1>1. Tóm tắt (Executive Summary)</h1>
 
-            <figure>
-                <img src="assets/timeline.png" alt="Timeline từ vector tĩnh đến kỷ nguyên Generative Pre-Training">
-                <figcaption>Lộ trình phát triển từ mô hình word2vec tĩnh đến GPT-1 — bước chuyển từ biểu diễn từ cô lập sang mô hình ngôn ngữ tiền huấn luyện tổng quát.</figcaption>
-            </figure>
-
             <h3>Bối cảnh (Background)</h3>
             <ul>
                 <li><strong>Tư duy Task-specific thống trị:</strong> Ngành NLP bị kìm hãm bởi việc thiết kế các hệ thống AI chuyên biệt, phụ thuộc hoàn toàn vào kiến trúc và dữ liệu gán nhãn riêng cho từng nhiệm vụ.</li>
                 <li><strong>Không thể tái sử dụng:</strong> Một mô hình được huấn luyện cho tác vụ này (ví dụ: phân loại văn bản) gần như không thể áp dụng cho tác vụ khác (ví dụ: trả lời câu hỏi).</li>
                 <li><strong>Rào cản mở rộng:</strong> Sự thiếu vắng cơ chế hiểu ngôn ngữ tổng quát buộc người học phải thiết kế lại cấu trúc mô hình từ đầu cho mỗi bài toán mới, gây tốn kém chi phí.</li>
             </ul>
+
+            <figure>
+                <img src="assets/timeline.png" alt="Timeline từ vector tĩnh đến kỷ nguyên Generative Pre-Training">
+                <figcaption>Lộ trình phát triển từ mô hình word2vec tĩnh đến GPT-1 — bước chuyển từ biểu diễn từ cô lập sang mô hình ngôn ngữ tiền huấn luyện tổng quát.</figcaption>
+            </figure>
 
             <h3>Giải pháp cốt lõi (Core Solution)</h3>
             <ul>
@@ -131,7 +131,7 @@
 
             <h3>4.1 Tác vụ Suy luận hệ quả (Natural Language Inference - NLI)</h3>
             <ul>
-                <li><strong>Cách biến đổi đầu vào:</strong> Nối chuỗi Tiền đề ($p$) và Giả thuyết ($h$) lại với nhau, ngăn cách bằng token phân tách ($):
+                <li><strong>Cách biến đổi đầu vào:</strong> Nối chuỗi Tiền đề ($p$) và Giả thuyết ($h$) lại với nhau, ngăn cách bằng token phân tách (<code>$</code>):
                     $$\text{[&lt;s&gt;; } p \text{; \$; } h \text{; &lt;e&gt;]}$$
                 </li>
                 <li><strong>Ví dụ minh họa:</strong>
@@ -223,6 +223,14 @@
             <ul>
                 <li><strong>Số lượng tầng chuyển giao:</strong> Hiệu suất tăng tỉ lệ thuận với số lượng tầng Transformer được tái sử dụng từ giai đoạn pre-training.</li>
                 <li><strong>Năng lực Zero-shot:</strong> Mô hình tự phát triển khả năng giải quyết tác vụ cơ bản ngay trong giai đoạn pre-training không giám sát.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/Analysis.png" alt="Phân tích hiệu suất theo số tầng và số lượng pre-training updates">
+                <figcaption>Hiệu suất tăng tỉ lệ thuận với số tầng Transformer được tái sử dụng (trái) và số lượng cập nhật pre-training (phải) — khẳng định lợi ích của việc học biểu diễn ngôn ngữ từ dữ liệu lớn.</figcaption>
+            </figure>
+
+            <ul>
                 <li><strong>Ablation Study:</strong>
                     <ul>
                         <li>Không có $L_1$ (auxiliary loss) khi fine-tuning làm giảm hiệu suất các tác vụ phức tạp.</li>
@@ -231,10 +239,6 @@
                 </li>
             </ul>
 
-            <figure>
-                <img src="assets/Analysis.png" alt="Phân tích hiệu suất theo số tầng và số lượng pre-training updates">
-                <figcaption>Hiệu suất tăng tỉ lệ thuận với số tầng Transformer được tái sử dụng (trái) và số lượng cập nhật pre-training (phải) — khẳng định lợi ích của việc học biểu diễn ngôn ngữ từ dữ liệu lớn.</figcaption>
-            </figure>
             <figure>
                 <img src="assets/ablation_study.png" alt="Bảng ablation study">
                 <figcaption>Ablation Study cho thấy: mất auxiliary loss <em>L₁</em> làm giảm hiệu suất; Transformer vượt LSTM trung bình 5.6 điểm nhờ khả năng học ngữ cảnh tầm xa.</figcaption>
