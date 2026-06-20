@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer — Attention Is All You Need</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="../../shared/css/custom.css">
+</head>
+<body class="blog-page">
+    <main class="blog-container">
+        <article class="blog-content">
+            <h1 id="transformer-attention-is-all-you-need">Transformer — Attention Is All You Need</h1>
+<p>Bài viết này giải thích kiến trúc Transformer một cách trực quan.</p>
+<h2 id="self-attention">Self-Attention</h2>
+<p>Self-attention cho phép mô hình nhìn vào tất cả các token cùng lúc và tính trọng số quan hệ giữa chúng.</p>
+$$
+\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$
+
+<p>Trong đó $Q$, $K$, $V$ lần lượt là query, key và value.</p>
+<h2 id="code-minh-hoa">Code minh họa</h2>
+<pre><code class="language-python">import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V):
+    d_k = Q.size(-1)
+    scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
+    weights = F.softmax(scores, dim=-1)
+    return torch.matmul(weights, V)
+</code></pre>
+        </article>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="../../shared/js/custom.js"></script>
+    <script>
+        hljs.highlightAll();
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false},
+                {left: '\\[', right: '\\]', display: true},
+                {left: '\\(', right: '\\)', display: false}
+            ],
+            throwOnError: false
+        });
+    </script>
+</body>
+</html>

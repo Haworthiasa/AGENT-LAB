@@ -1,2 +1,19 @@
 .playwright-mcp
-/model
+.codegraph/
+
+# Model artifacts
+/model/
+*.pt
+*.pth
+*.pkl
+*.bin
+*.safetensors
+
+# Python build cache
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# Local logs and generated browser artifacts
+*.log
