@@ -4,7 +4,7 @@
 
 ## Project Structure & Module Organization
 
-This repository stores source materials and generated outputs for AGENT-LAB
+This repository stores source materials and hand-crafted outputs for AGENT-LAB
 slides and blogs.
 
 ```text
@@ -13,48 +13,39 @@ content/<topic>/        # Markdown source, code, papers, references, assets
   code/                 # notebooks and scripts
   papers/               # PDF papers
   refs/                 # reference documents and original images
-  assets/               # public images used by generated slides/blogs
-slides/<topic>/         # Generated Reveal.js slide decks
-blogs/<topic>/          # Generated blog pages
-shared/                 # Reusable templates, CSS, JS
-tools/                  # Build scripts
+  assets/               # public images used by slides/blogs
+slides/<topic>/         # Hand-crafted Reveal.js slide decks
+blogs/<topic>/          # Hand-crafted blog pages
+shared/                 # Reusable CSS (and future shared assets)
 ```
 
 The hand-written Transformer deck lives at `slides/transformer/index.html`.
-It is kept intact; new topics should be authored in Markdown under
-`content/<topic>/src/` and generated with `tools/build.py`.
+New topics are authored by writing Markdown under `content/<topic>/src/` and
+hand-crafting the corresponding HTML outputs.
 
-For the full Markdown-to-slide/blog workflow, customization options, and
-environment setup, see `WORKFLOW.md`.
+There is no automated build script. The agent reads the Markdown source and the
+user's instructions, then creates the slide/blog HTML directly.
 
 ## Build, Test, and Development Commands
 
-Install build dependencies:
-
-```powershell
-pip install -r requirements.txt
-```
-
-Build all topics:
-
-```powershell
-python tools/build.py
-```
-
-Build one topic:
-
-```powershell
-python tools/build.py --topic transformer
-```
-
-Serve locally:
+No package manager is required to view the decks and blogs. Serve the repo from
+the repository root:
 
 ```powershell
 python -m http.server 8010
 ```
 
-Open `http://127.0.0.1:8010/slides/transformer/` for the Transformer deck, or
-`http://127.0.0.1:8010/blogs/transformer/` for the generated blog.
+Open in a browser:
+
+- Transformer slide: `http://127.0.0.1:8010/slides/transformer/`
+- GPT-1 blog: `http://127.0.0.1:8010/blogs/gpt-1/`
+
+> Prefer a local server over `file://` because Reveal.js, CDN assets, hash
+> navigation, and plugin behavior are closer to the deployed path.
+
+## Workflow
+
+For the full manual workflow, see `WORKFLOW.md`.
 
 ## Coding Style & Naming Conventions
 
@@ -72,11 +63,10 @@ Open `http://127.0.0.1:8010/slides/transformer/` for the Transformer deck, or
 
 Manual visual regression is the primary test. After edits:
 
-1. Run `python tools/build.py --topic <topic>`.
-2. Serve the repo locally.
-3. Check the generated slide deck and blog in desktop and narrow viewports.
-4. Confirm LaTeX formulas render, code blocks highlight, and images load.
-5. Verify hash navigation and vertical slide stacks for Reveal.js decks.
+1. Serve the repo locally.
+2. Check the slide deck and blog in desktop and narrow viewports.
+3. Confirm LaTeX formulas render, code blocks highlight, and images load.
+4. Verify hash navigation and vertical slide stacks for Reveal.js decks.
 
 Keep generated browser artifacts, local logs, and temporary files out of commits.
 
@@ -95,7 +85,6 @@ local verification command and browser used.
 - Keep changes narrowly scoped to the requested topic, slide, or asset.
 - Do not reformat the whole deck for small content fixes.
 - Author new content in Markdown under `content/<topic>/src/` when possible.
-- Run `python tools/build.py --topic <topic>` after changing Markdown source.
 - When changing diagrams, adjust the SVG `viewBox` and responsive CSS together
   so labels remain visible across viewports.
 - Do not commit model checkpoints or other large binary artifacts.

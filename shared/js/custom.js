@@ -1,1 +1,0 @@
-/* Shared JavaScript for generated slides and blogs. */

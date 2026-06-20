@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improving Language Understanding by Generative Pre-Training (GPT-1)</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="../../shared/css/blog-anthropic.css">
+</head>
+<body>
+    <div class="blog-container">
+        <header class="blog-header">
+            <h1>Improving Language Understanding by Generative Pre-Training (GPT-1)</h1>
+            <div class="blog-meta">GPT-1 · 20 June 2026</div>
+        </header>
+
+        <article class="blog-content">
+            <h1>1. Tóm tắt (Executive Summary)</h1>
+
+            <h3>Bối cảnh (Background)</h3>
+            <ul>
+                <li><strong>Tư duy Task-specific thống trị:</strong> Ngành NLP bị kìm hãm bởi việc thiết kế các hệ thống AI chuyên biệt, phụ thuộc hoàn toàn vào kiến trúc và dữ liệu gán nhãn riêng cho từng nhiệm vụ.</li>
+                <li><strong>Không thể tái sử dụng:</strong> Một mô hình được huấn luyện cho tác vụ này (ví dụ: phân loại văn bản) gần như không thể áp dụng cho tác vụ khác (ví dụ: trả lởi câu hỏi).</li>
+                <li><strong>Rào cản mở rộng:</strong> Sự thiếu vắng cơ chế hiểu ngôn ngữ tổng quát buộc ngườii học phải thiết kế lại cấu trúc mô hình từ đầu cho mỗi bài toán mới, gây tốn kém chi phí.</li>
+            </ul>
+
+            <h3>Giải pháp cốt lõi (Core Solution)</h3>
+            <ul>
+                <li><strong>Phương pháp Generative Pre-Training (GPT):</strong> Đề xuất quy trình hai giai đoạn độc lập thay vì huấn luyện riêng biệt từ đầu:
+                    <ul>
+                        <li><strong>Tiền huấn luyện không giám sát (Unsupervised Pre-training):</strong> Học cấu trúc sâu sắc của ngôn ngữ từ khối lượng khổng lồ văn bản chưa gắn nhãn.</li>
+                        <li><strong>Tinh chỉnh có giám sát (Supervised Fine-tuning):</strong> Thích ứng mô hình đã học sang các tác vụ chuyên biệt bằng tập dữ liệu nhỏ đã gắn nhãn.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Tác động thực tiễn (Practical Impact)</h3>
+            <ul>
+                <li><strong>Tối giản kiến trúc:</strong> Cho phép một cấu trúc mô hình duy nhất xử lý đa dạng tác vụ với những thay đổi tối thiểu.</li>
+                <li><strong>Bước chuyển dịch cách mạng:</strong> Thay đổi tư duy từ "xây dựng mô hình mới cho mỗi bài toán" sang "huấn luyện một mô hình tổng quát để hiểu ngôn ngữ, sau đó tái sử dụng linh hoạt".</li>
+            </ul>
+
+            <hr>
+
+            <h1>2. Mục đích nghiên cứu (Goals of the Paper)</h1>
+
+            <h3>Động lực nghiên cứu (Motivation)</h3>
+            <ul>
+                <li><strong>Khan hiếm dữ liệu nhãn:</strong> Các mô hình đương thờii phụ thuộc nặng nề vào dữ liệu gán nhãn thủ công – nguồn tài nguyên vốn tốn kém và thường không đủ cho các tác vụ đặc thù.</li>
+                <li><strong>Kiến trúc cô lập:</strong> Các mô hình thường được thiết kế "đo ni đóng giày" cho một tác vụ duy nhất, không có khả năng thích ứng hoặc tái sử dụng.</li>
+            </ul>
+
+            <h3>Mục tiêu cụ thể (Specific Objectives)</h3>
+            <ul>
+                <li><strong>Tận dụng dữ liệu thô:</strong> Chuyển dịch sang phương pháp tổng quát, khai thác nguồn văn bản thô vô tận trên Internet để học các biểu diễn ngôn ngữ chất lượng cao.</li>
+                <li><strong>Hiện thực hóa Học chuyển giao (Transfer Learning):</strong> Khai thác tri thức nền tảng từ giai đoạn tiền huấn luyện không giám sát để áp dụng hiệu quả vào các tác vụ đích.</li>
+                <li><strong>Tối ưu hiệu suất và kiến trúc:</strong> Nâng cao kết quả trên nhiều bài toán NLP (QA, suy luận logic, phân loại...) mà không cần thiết kế lại cấu trúc mạng neuron cho từng bài toán đó.</li>
+            </ul>
+
+            <hr>
+
+            <h1>3. GPT Framework</h1>
+
+            <h3>3.1 Tiền huấn luyện không giám sát (Unsupervised Pre-training)</h3>
+            <ul>
+                <li><strong>Mục tiêu:</strong> Giúp mô hình học kiến thức nền tảng và cấu trúc của ngôn ngữ (vocabulary, grammar, …).</li>
+                <li><strong>Nhiệm vụ cốt lõi:</strong> Mô hình hóa ngôn ngữ tiêu chuẩn (Standard Language Modeling) – <strong>Nhìn các từ đi trước để đoán từ tiếp theo</strong> trên một tập văn bản thô $U = \{u_1, \ldots, u_n\}$.</li>
+                <li><strong>Hàm mục tiêu (Loss Function):</strong> Tối đa hóa hàm xác suất log-likelihood:
+                    $$L_1(U) = \sum_{i} \log P(u_i \mid u_{i-k}, \ldots, u_{i-1}; \Theta)$$
+                    <em>(Trong đó: $k$ là kích thước cửa sổ ngữ cảnh, $\Theta$ là các tham số mạng neuron).</em>
+                </li>
+                <li><strong>Luồng xử lý dữ liệu qua kiến trúc Transformer Decoder:</strong>
+                    <ul>
+                        <li><strong>Bước 1 (Nhúng dữ liệu):</strong> Biến đổi chuỗi từ đầu vào $U$ thành các vector số bằng cách cộng token embedding matrix ($W_e$) với position embedding matrix ($W_p$):
+                            $$h_0 = UW_e + W_p$$
+                        </li>
+                        <li><strong>Bước 2 (Xử lý sâu):</strong> Đẩy vector qua $n$ tầng Transformer Decoder với cơ chế tự chú ý đa đầu (multi-headed self-attention) để học mối quan hệ giữa các từ:
+                            $$h_l = \text{transformer\_block}(h_{l-1}) \quad \forall l \in [1, n]$$
+                        </li>
+                        <li><strong>Bước 3 (Đầu ra):</strong> Sử dụng hàm softmax tại tầng cuối cùng với vector trạng thái $h_n$ để tính xác suất và tìm ra từ tiếp theo phù hợp nhất:
+                            $$P(u) = \text{softmax}(h_n W_e^T)$$
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>3.2 Tinh chỉnh có giám sát (Supervised Fine-tuning)</h3>
+            <ul>
+                <li><strong>Mô tả:</strong> Sau khi có "nền tảng ngôn ngữ", mô hình được chuyển sang học các tác vụ chuyên biệt (như phân loại văn bản, trả lởi câu hỏi) bằng tập dữ liệu nhỏ đã gán nhãn sẵn $C$ (gồm đầu vào $x^1, \ldots, x^m$ và nhãn $y$).</li>
+                <li><strong>Cơ chế dự đoán:</strong> Chuỗi đầu vào được đưa qua mô hình GPT đã pre-train. Ta lấy vector trạng thái đầu ra tại vị trí từ cuối cùng ($h_m^l$) của tầng Transformer cuối cùng, đưa qua một <strong>tầng tuyến tính bổ sung (Linear layer)</strong> mới với tham số $W_y$ để dự đoán nhãn $y$:
+                    $$P(y \mid x^1, \ldots, x^m) = \text{softmax}(h_m^l W_y)$$
+                </li>
+                <li><strong>Hàm mục tiêu tối ưu chính:</strong> Tối đa hóa xác suất đoán đúng nhãn $y$:
+                    $$L_2(C) = \sum_{(x,y)} \log P(y \mid x^1, \ldots, x^m)$$
+                </li>
+                <li><strong>Cải tiến bằng mục tiêu phụ trợ (Auxiliary Objective):</strong> Các tác giả phát hiện nếu chỉ tối ưu mỗi nhiệm vụ đoán nhãn ($L_2$), mô hình dễ bị quá khớp (overfitting).
+                    <ul>
+                        <li><strong>Giải pháp:</strong> Giữ lại nhiệm vụ đoán từ tiếp theo ($L_1$) làm nhiệm vụ phụ trợ ngay lúc tinh chỉnh cùng trọng số $\lambda$:
+                            $$L_3(C) = L_2(C) + \lambda \cdot L_1(C)$$
+                        </li>
+                        <li><strong>Lợi ích:</strong> Giúp mô hình tổng quát hóa tốt hơn trên dữ liệu mới và đẩy nhanh tốc độ hội tụ khi huấn luyện (improving generalization &amp; accelerating convergence).</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <hr>
+
+            <h1>4. Task-specific Input Transformations &amp; Results</h1>
+
+            <p>Để áp dụng cho các tác vụ có cấu trúc đầu vào đa dạng mà không phải thay đổi kiến trúc mạng, GPT-1 làm phẳng mọi đầu vào phức tạp thành một chuỗi duy nhất, phân tách bằng các mã token đặc biệt: Bắt đầu (<code>&lt;s&gt;</code>), Kết thúc (<code>&lt;e&gt;</code>), và Phân tách (<code>$</code>).</p>
+
+            <h3>4.1 Tác vụ Suy luận hệ quả (Natural Language Inference - NLI)</h3>
+            <ul>
+                <li><strong>Cách biến đổi đầu vào:</strong> Nối chuỗi Tiền đề ($p$) và Giả thuyết ($h$) lại với nhau, ngăn cách bằng token phân tách ($):
+                    $$\text{[\&lt;s\&gt;; } p \text{; \$; } h \text{; \&lt;e\&gt;]}$$
+                </li>
+                <li><strong>Ví dụ minh họa:</strong>
+                    <ul>
+                        <li><em>Tiền đề ($p$):</em> "Đêm nay trờii đổ mưa rất to."</li>
+                        <li><em>Giả thuyết ($h$):</em> "Đường phố có thể bị ngập."</li>
+                        <li><em>Đầu vào sau biến đổi:</em> <code>[&lt;s&gt;; Đêm nay trờii đổ mưa rất to. ; $ ; Đường phố có thể bị ngập. ; &lt;e&gt;]</code></li>
+                    </ul>
+                </li>
+                <li><strong>Chú thích Benchmark/Dataset:</strong> MNLI, RTE, QNLI.</li>
+                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
+            </ul>
+
+            <table>
+                <thead>
+                    <tr><th>Mô hình (Model)</th><th style="text-align:center">MNLI (Matched)</th><th style="text-align:center">MNLI (Mismatched)</th><th style="text-align:center">RTE</th><th style="text-align:center">QNLI</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">80.6</td><td style="text-align:center">80.1</td><td style="text-align:center">61.7</td><td style="text-align:center">82.3</td></tr>
+                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>82.1</strong></td><td style="text-align:center"><strong>81.4</strong></td><td style="text-align:center"><strong>56.0</strong></td><td style="text-align:center"><strong>88.1</strong></td></tr>
+                </tbody>
+            </table>
+
+            <h3>4.2 Tác vụ Trả lởi câu hỏi và Suy luận thực tế (QA &amp; Commonsense Reasoning)</h3>
+            <ul>
+                <li><strong>Cách biến đổi đầu vào:</strong> Nối ngữ cảnh ($z$) và câu hỏi ($q$) với <strong>từng câu trả lởi ứng viên $a_k$ độc lập</strong>:
+                    $$\text{[\&lt;s\&gt;; } z \text{; } q \text{; \$; } a_k \text{; \&lt;e\&gt;]}$$
+                </li>
+                <li><strong>Ví dụ minh họa:</strong>
+                    <ul>
+                        <li><em>Ngữ cảnh ($z$):</em> "Hải là một sinh viên CNTT."</li>
+                        <li><em>Câu hỏi ($q$):</em> "Hải dùng gì để lập trình?"</li>
+                        <li><em>Đáp án ứng viên:</em> $a_1$: "Laptop", $a_2$: "Máy hút bụi".</li>
+                        <li><em>Đầu vào chuỗi 1:</em> <code>[&lt;s&gt;; Hải là một sinh viên CNTT. ; Hải dùng gì để lập trình? ; $ ; Laptop ; &lt;e&gt;]</code></li>
+                    </ul>
+                </li>
+                <li><strong>Chú thích Benchmark/Dataset:</strong> RACE, Story Cloze.</li>
+                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
+            </ul>
+
+            <table>
+                <thead>
+                    <tr><th>Mô hình (Model)</th><th style="text-align:center">RACE (High)</th><th style="text-align:center">RACE (Total)</th><th style="text-align:center">Story Cloze</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">46.8</td><td style="text-align:center">44.1</td><td style="text-align:center">77.6</td></tr>
+                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>49.1</strong></td><td style="text-align:center"><strong>46.8</strong></td><td style="text-align:center"><strong>86.5</strong></td></tr>
+                </tbody>
+            </table>
+
+            <h3>4.3 Tác vụ Đánh giá độ tương đồng văn bản (Semantic Similarity)</h3>
+            <ul>
+                <li><strong>Cách biến đổi đầu vào:</strong> Tạo hai chuỗi đảo vị trí và cộng kết quả element-wise:
+                    $$\text{Chuỗi 1: [\&lt;s\&gt;; } Text_1 \text{; \$; } Text_2 \text{; \&lt;e\&gt;]}$$
+                    $$\text{Chuỗi 2: [\&lt;s\&gt;; } Text_2 \text{; \$; } Text_1 \text{; \&lt;e\&gt;]}$$
+                </li>
+                <li><strong>Ví dụ minh họa:</strong>
+                    <ul>
+                        <li><em>C1:</em> "Cách này hiệu quả." <em>C2:</em> "Làm vậy kết quả tốt."</li>
+                        <li><em>Đầu vào C1:</em> <code>[&lt;s&gt;; Cách này hiệu quả. ; $ ; Làm vậy kết quả tốt. ; &lt;e&gt;]</code></li>
+                    </ul>
+                </li>
+                <li><strong>Chú thích Benchmark/Dataset:</strong> MRPC, STS-B.</li>
+                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
+            </ul>
+
+            <table>
+                <thead>
+                    <tr><th>Mô hình (Model)</th><th style="text-align:center">MRPC (F1 score)</th><th style="text-align:center">STS-B (Pearson)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">86.0</td><td style="text-align:center">81.0</td></tr>
+                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>82.3</strong></td><td style="text-align:center"><strong>82.0</strong></td></tr>
+                </tbody>
+            </table>
+
+            <h3>4.4 Tác vụ Phân loại văn bản (Text Classification)</h3>
+            <ul>
+                <li><strong>Cách biến đổi đầu vào:</strong>
+                    $$\text{[\&lt;s\&gt;; Văn bản; \&lt;e\&gt;]}$$
+                </li>
+                <li><strong>Ví dụ minh họa:</strong> <code>[&lt;s&gt;; Bộ phim này rất xuất sắc. ; &lt;e&gt;]</code></li>
+                <li><strong>Chú thích Benchmark/Dataset:</strong> CoLA, SST-2.</li>
+                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
+            </ul>
+
+            <table>
+                <thead>
+                    <tr><th>Mô hình (Model)</th><th style="text-align:center">CoLA (Matthews)</th><th style="text-align:center">SST-2 (Accuracy)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">35.0</td><td style="text-align:center"><strong>93.2</strong></td></tr>
+                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>45.4</strong></td><td style="text-align:center">91.3</td></tr>
+                </tbody>
+            </table>
+
+            <hr>
+
+            <h1>5. Phân tích thực nghiệm (Analysis &amp; Ablation Study)</h1>
+
+            <ul>
+                <li><strong>Số lượng tầng chuyển giao:</strong> Hiệu suất tăng tỉ lệ thuận với số lượng tầng Transformer được tái sử dụng từ giai đoạn pre-training.</li>
+                <li><strong>Năng lực Zero-shot:</strong> Mô hình tự phát triển khả năng giải quyết tác vụ cơ bản ngay trong giai đoạn pre-training không giám sát.</li>
+                <li><strong>Ablation Study:</strong>
+                    <ul>
+                        <li>Không có $L_1$ (auxiliary loss) khi fine-tuning làm giảm hiệu suất các tác vụ phức tạp.</li>
+                        <li>Transformer vượt trội hơn LSTM trung bình <strong>5.6 điểm</strong> nhờ khả năng học ngữ cảnh tầm xa tốt hơn.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <hr>
+
+            <h1>6. Kết luận (Conclusion)</h1>
+
+            <p><em>GPT-1 đã đặt nền móng cho kỷ nguyên của các mô hình ngôn ngữ lớn (LLMs) bằng cách chứng minh rằng việc tiền huấn luyện trên dữ liệu khổng lồ, kết hợp với kiến trúc Transformer và tinh chỉnh có giám sát, có thể tạo ra một hệ thống hiểu ngôn ngữ tổng quát mạnh mẽ vượt xa các mô hình chuyên biệt trước đó.</em></p>
+        </article>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script>
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    </script>
+</body>
+</html>

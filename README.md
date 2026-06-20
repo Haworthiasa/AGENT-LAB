@@ -11,31 +11,12 @@ content/<topic>/        # Markdown source and reference materials
   papers/               # PDF papers
   refs/                 # reference images and documents
   assets/               # public images for generated outputs
-slides/<topic>/         # Generated Reveal.js slide decks
-blogs/<topic>/          # Generated blog pages
-shared/                 # Templates, CSS, JS used by generated pages
-tools/                  # Build scripts
+slides/<topic>/         # Hand-crafted Reveal.js slide decks
+blogs/<topic>/          # Hand-crafted blog pages
+shared/                 # Shared CSS and reusable assets
 ```
 
 ## Quick start
-
-Install dependencies:
-
-```powershell
-pip install -r requirements.txt
-```
-
-Build all topics:
-
-```powershell
-python tools/build.py
-```
-
-Build a single topic:
-
-```powershell
-python tools/build.py --topic transformer
-```
 
 Serve locally:
 
@@ -46,18 +27,22 @@ python -m http.server 8010
 Browse:
 
 - Transformer slides: `http://127.0.0.1:8010/slides/transformer/`
-- Transformer blog: `http://127.0.0.1:8010/blogs/transformer/`
+- GPT-1 blog: `http://127.0.0.1:8010/blogs/gpt-1/`
 
 ## Adding a new topic
 
-1. Create `content/<topic>/src/slides.md` and `content/<topic>/src/blog.md`.
+1. Create `content/<topic>/src/slides.md` and/or `content/<topic>/src/blog.md`.
 2. Add public images to `content/<topic>/assets/`.
-3. Run `python tools/build.py --topic <topic>`.
-4. Verify the generated pages under `slides/<topic>/` and `blogs/<topic>/`.
+3. Ask the agent to hand-craft `slides/<topic>/index.html` and/or
+   `blogs/<topic>/index.html` from the Markdown source and your instructions.
+4. Verify the pages locally.
 
 ## Notes
 
 - `slides/transformer/index.html` is the original hand-written Reveal.js deck.
-- New topics are generated from Markdown, preserving headings, LaTeX math, and
-  fenced code blocks.
+- New topics are hand-crafted from Markdown, preserving headings, LaTeX math,
+  tables, and code blocks.
 - Model checkpoints and other large binary artifacts should not be committed.
+- `requirements.txt` is kept for optional notebook dependencies.
+
+For the full workflow, see `WORKFLOW.md`.

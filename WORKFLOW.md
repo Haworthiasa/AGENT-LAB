@@ -1,140 +1,66 @@
 # Workflow: Từ Markdown đến Slide / Blog
 
-Tài liệu này mô tả cách repo biến file Markdown thành slide Reveal.js và
-blog HTML, cùng các tùy chọn để "vibe code" giống như Transformer deck gốc.
+Tài liệu này mô tả workflow thủ công: bạn viết Markdown + chỉ dẫn, agent đọc
+và viết tay HTML cho slide/blog.
+
+> Không còn `build.py` hay script tự động nào. Mọi output đều được viết tay.
 
 ## Môi trường
 
-Tạo virtual environment và cài đặt dependencies:
-
-```powershell
-# Windows
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-```bash
-# macOS / Linux
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-`requirements.txt` chỉ chứa các thư viện cần thiết cho `tools/build.py`:
-
-- `markdown==3.10.2` — parser Markdown
-- `pyyaml==6.0.3` — đọc YAML frontmatter
-
-> Nếu bạn muốn chạy notebook, cần cài thêm `jupyter`, `numpy`, `torch`,
-> `matplotlib`, v.v. tùy từng notebook. Các thư viện đó không nằm trong
-> `requirements.txt` vì quá nặng và phụ thuộc vào từng chủ đề.
-
-## `build.py` tạo ra cái gì?
-
-`tools/build.py` đọc nguồn Markdown trong `content/<topic>/src/` và sinh ra:
-
-- `slides/<topic>/index.html` — Reveal.js slide deck
-- `blogs/<topic>/index.html` — blog HTML đơn giản
-- `slides/<topic>/assets/` và `blogs/<topic>/assets/` — bản sao của
-  `content/<topic>/assets/`
-
-Nội dung được giữ nguyên:
-
-- Cấu trúc heading, list, paragraph, bảng
-- Công thức toán LaTeX: `$...$` và `$$...$$`
-- Code block với highlight
-
-## Workflow cơ bản
-
-### 1. Tạo chủ đề mới
-
-```powershell
-$topic = "bert"
-New-Item -ItemType Directory -Path "content\$topic\src" -Force
-New-Item -ItemType Directory -Path "content\$topic\assets" -Force
-```
-
-### 2. Viết Markdown
-
-`content/bert/src/slides.md`:
-
-```markdown
----
-title: "BERT — Pre-training of Deep Bidirectional Transformers"
-topic: bert
-type: slides
-date: 2026-06-20
-math: katex
-highlight: monokai
----
-
-# BERT
-
-Giới thiệu kiến trúc BERT.
-
----
-
-## Masked Language Model
-
-BERT dự đoán token bị che:
-
-$$
-P(w_i \mid w_{\text{masked}}) = \text{softmax}(W h_i)
-$$
-
-```python
-from transformers import BertTokenizer, BertModel
-
-tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-```
-```
-
-`content/bert/src/blog.md` có cấu trúc tương tự.
-
-### 3. Thêm ảnh
-
-Copy ảnh công khai vào:
-
-```powershell
-Copy-Item "path\to\image.png" "content\bert\assets\image.png"
-```
-
-Trong Markdown dùng:
-
-```markdown
-![alt](assets/image.png)
-```
-
-### 4. Build
-
-```powershell
-# Build một chủ đề
-python tools/build.py --topic bert
-
-# Build tất cả chủ đề
-python tools/build.py
-```
-
-### 5. Xem kết quả
+Không cần cài đặt gì để xem slide/blog. Chỉ cần Python để chạy local server:
 
 ```powershell
 python -m http.server 8010
 ```
 
-Mở trình duyệt:
+Nếu sau này bạn muốn chạy notebook, có thể cài các thư viện trong
+`requirements.txt`:
 
-- Slide: `http://127.0.0.1:8010/slides/bert/`
-- Blog: `http://127.0.0.1:8010/blogs/bert/`
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-> Phải dùng `http://` qua local server, không mở file trực tiếp bằng
-> `file://` vì Reveal.js và CDN asset sẽ bị lỗi đường dẫn.
+## Workflow thủ công
 
-## Quy tắc viết Markdown
+```
+Bạn
+├── Viết content/<topic>/src/slides.md
+├── Viết content/<topic>/src/blog.md
+├── Đặt ảnh vào content/<topic>/assets/
+└── Gửi chỉ dẫn cho agent (trực tiếp trong message)
+
+Agent
+├── Đọc Markdown nguồn
+├── Viết tay slides/<topic>/index.html
+├── Viết tay blogs/<topic>/index.html
+├── Copy ảnh sang output folders
+└── Serve + kiểm tra visual
+```
+
+## Cách yêu cầu agent
+
+Gửi message theo mẫu:
+
+```text
+Tạo blog [tên-chủ-đề] theo phong cách [tên-phong-cách].
+Nội dung từ content/[tên-chủ-đề]/src/blog.md.
+Yêu cầu thêm: ...
+```
+
+Ví dụ:
+
+```text
+Tạo blog gpt-1 theo phong cách Anthropic Blog.
+Nội dung từ content/gpt-1/src/blog.md.
+Giữ nguyên công thức toán và bảng kết quả.
+```
+
+## Quy tắc viết Markdown nguồn
 
 | Thành phần | Cú pháp |
 |---|---|
-| Slide ngang | Dùng `---` trên dòng riêng |
 | Heading | `#`, `##`, `###` |
 | Inline math | `$...$` |
 | Display math | `$$...$$` |
@@ -143,71 +69,37 @@ Mở trình duyệt:
 | Bảng | Markdown table thông thường |
 | Metadata | YAML frontmatter ở đầu file |
 
-## Vibe coding: tùy chỉnh như Transformer deck gốc
+## Phong cách có sẵn
 
-`build.py` tạo ra bộ slide **chuẩn hóa**. Nếu bạn muốn tùy chỉnh sâu như
-deck Transformer (custom CSS, SVG inline, animation, layout phức tạp), có 4
-hướng tiếp cận:
+### Anthropic Blog
 
-### Cách 1: Viết HTML bằng tay (giống Transformer)
+Tối giản, sang trọng như tờ báo in cao cấp:
 
-Tạo file `slides/<topic>/index.html` bằng tay. `build.py` sẽ **không ghi đè**
-file này trừ khi bạn dùng `--force`.
+- Nền: màu kem/giấy cũ `#F9F6F0`
+- Chữ: màu than chì sẫm `#2D2D2D`
+- Điểm nhấn: màu đỏ gạch `#A94442`
+- Heading: serif (Newsreader/Georgia)
+- Body: sans-serif (Inter/Arial)
+- Layout: đơn cột, max-width 700px, nhiều khoảng trắng
+- Bảng: chỉ đường kẻ ngang mảnh
+- Code block: nền tối
+- Ảnh: flat, không shadow/3D
 
-Phù hợp khi bạn muốn toàn quyền kiểm soát từng pixel như deck Transformer.
+CSS dùng chung: `shared/css/blog-anthropic.css`
 
-### Cách 2: Tùy chỉnh template chung
+## Vibe coding
 
-Sửa `shared/templates/slides.html` hoặc `shared/templates/blog.html` để thay
-đổi CDN, font, cấu trúc HTML toàn cục.
+Vì output là HTML viết tay, bạn có thể tùy chỉnh sâu:
 
-Sửa `shared/css/custom.css` hoặc `shared/js/custom.js` để áp dụng style/script
-cho tất cả slide/blog được generate.
-
-### Cách 3: CSS/JS riêng cho từng chủ đề
-
-Đặt file trong `content/<topic>/`:
-
-| File | Tác dụng |
-|---|---|
-| `extra.css` | CSS cho cả slide và blog |
-| `extra.js` | JS cho cả slide và blog |
-| `slides-extra.css` | CSS chỉ cho slide |
-| `slides-extra.js` | JS chỉ cho slide |
-| `blog-extra.css` | CSS chỉ cho blog |
-| `blog-extra.js` | JS chỉ cho blog |
-
-`build.py` tự động copy các file này vào output và inject vào `<head>`.
-
-Ví dụ `content/bert/extra.css`:
-
-```css
-.reveal h1 { color: #2d5bb9; }
-.blog-content h2 { border-color: #2d5bb9; }
-```
-
-### Cách 4: Hybrid — generate trước, rồi vibe code sau
-
-1. Chạy `python tools/build.py --topic <topic>` để có bộ slide/blog cơ bản.
-2. Mở `slides/<topic>/index.html` hoặc `blogs/<topic>/index.html` và sửa tay.
-3. Để bảo vệ bản sửa tay, đừng chạy lại `build.py` trên topic đó, hoặc chạy
-   với `--force` khi bạn thực sự muốn ghi đè.
-
-## Lưu ý quan trọng
-
-- `build.py` chỉ tạo slide/blog từ Markdown. Nó **không thể** tự động sinh
-  ra các diagram SVG phức tạp như trong Transformer deck.
-- Để có diagram phức tạp, bạn cần viết HTML/SVG trực tiếp trong Markdown
-  (Markdown hỗ trợ nhúng HTML) hoặc dùng Cách 1/Cách 4.
-- Mỗi output folder (`slides/<topic>/`, `blogs/<topic>/`) tự chứa assets
-  riêng để dễ deploy từng bài riêng lẻ.
+1. **Viết HTML bằng tay** trong `slides/<topic>/index.html` hoặc
+   `blogs/<topic>/index.html`.
+2. **Dùng shared CSS** cho phong cách nhất quán (vd `blog-anthropic.css`).
+3. **Thêm CSS/JS riêng cho từng topic** trong folder output nếu cần.
 
 ## Thêm chủ đề mới checklist
 
-- [ ] Tạo `content/<topic>/src/slides.md`
-- [ ] Tạo `content/<topic>/src/blog.md`
+- [ ] Tạo `content/<topic>/src/slides.md` và/hoặc `content/<topic>/src/blog.md`
 - [ ] Thêm ảnh vào `content/<topic>/assets/`
-- [ ] (Tùy chọn) Thêm `extra.css`, `slides-extra.css`, `blog-extra.css`, v.v.
-- [ ] Chạy `python tools/build.py --topic <topic>`
-- [ ] Serve bằng `python -m http.server 8010` và kiểm tra
-- [ ] Kiểm tra LaTeX render, code highlight, ảnh load đúng
+- [ ] Gửi chỉ dẫn cho agent để viết tay output
+- [ ] Kiểm tra output bằng `python -m http.server 8010`
+- [ ] Xác nhận LaTeX render, code highlight, ảnh load đúng
