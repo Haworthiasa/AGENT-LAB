@@ -24,6 +24,9 @@ The hand-written Transformer deck lives at `slides/transformer/index.html`.
 It is kept intact; new topics should be authored in Markdown under
 `content/<topic>/src/` and generated with `tools/build.py`.
 
+For the full Markdown-to-slide/blog workflow, customization options, and
+environment setup, see `WORKFLOW.md`.
+
 ## Build, Test, and Development Commands
 
 Install build dependencies:

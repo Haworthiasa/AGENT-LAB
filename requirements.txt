@@ -1,2 +1,3 @@
-markdown>=3.5
-pyyaml>=6.0
+# Build dependencies for tools/build.py
+markdown==3.10.2
+pyyaml==6.0.3

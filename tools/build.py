@@ -82,6 +82,28 @@ def split_slides(html: str) -> str:
     return "\n".join(sections)
 
 
+def _extra_head(topic_dir: Path, output_name: str) -> str:
+    """Return HTML tags for per-topic extra CSS/JS if they exist."""
+    tags = []
+    # Shared extras for both slides and blog
+    for ext in ("css", "js"):
+        src = topic_dir / f"extra.{ext}"
+        if src.exists():
+            if ext == "css":
+                tags.append(f'<link rel="stylesheet" href="extra.{ext}">')
+            else:
+                tags.append(f'<script src="extra.{ext}"></script>')
+    # Output-specific extras
+    for ext in ("css", "js"):
+        src = topic_dir / f"{output_name}-extra.{ext}"
+        if src.exists():
+            if ext == "css":
+                tags.append(f'<link rel="stylesheet" href="{output_name}-extra.{ext}">')
+            else:
+                tags.append(f'<script src="{output_name}-extra.{ext}"></script>')
+    return "\n    ".join(tags)
+
+
 def build_topic(topic: str, force: bool = False) -> bool:
     """Build slides and blog for a single topic."""
     topic_dir = CONTENT_DIR / topic
@@ -106,7 +128,13 @@ def build_topic(topic: str, force: bool = False) -> bool:
             slides_html = split_slides(md_to_html(body))
             template = (TEMPLATES_DIR / "slides.html").read_text(encoding="utf-8")
             title = meta.get("title", topic)
-            final = template.replace("{{title}}", title).replace("{{content}}", slides_html)
+            extra = _extra_head(topic_dir, "slides")
+            final = (
+                template
+                .replace("{{title}}", title)
+                .replace("{{content}}", slides_html)
+                .replace("{{extra_head}}", extra)
+            )
             slides_html_path.write_text(final, encoding="utf-8")
             print(f"  Built slides/{topic}/index.html")
     else:
@@ -126,7 +154,13 @@ def build_topic(topic: str, force: bool = False) -> bool:
             blog_html = md_to_html(body)
             template = (TEMPLATES_DIR / "blog.html").read_text(encoding="utf-8")
             title = meta.get("title", topic)
-            final = template.replace("{{title}}", title).replace("{{content}}", blog_html)
+            extra = _extra_head(topic_dir, "blog")
+            final = (
+                template
+                .replace("{{title}}", title)
+                .replace("{{content}}", blog_html)
+                .replace("{{extra_head}}", extra)
+            )
             blog_html_path.write_text(final, encoding="utf-8")
             print(f"  Built blogs/{topic}/index.html")
     else:
@@ -139,6 +173,22 @@ def build_topic(topic: str, force: bool = False) -> bool:
                 shutil.rmtree(dst)
             shutil.copytree(assets_dir, dst)
         print(f"  Copied assets for {topic}")
+
+    # Copy per-topic extras to output folders
+    for extra in (
+        "extra.css",
+        "extra.js",
+        "slides-extra.css",
+        "slides-extra.js",
+        "blog-extra.css",
+        "blog-extra.js",
+    ):
+        src = topic_dir / extra
+        if src.exists():
+            if src.name.startswith("slides-") or src.name in ("extra.css", "extra.js"):
+                shutil.copy2(src, slides_out / extra)
+            if src.name.startswith("blog-") or src.name in ("extra.css", "extra.js"):
+                shutil.copy2(src, blog_out / extra)
 
     return True
 
