@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
@@ -22,11 +22,13 @@
         <article class="blog-content">
             <h1>1. Tóm tắt (Executive Summary)</h1>
 
+            <img src="assets/timeline.png" alt="Timeline từ vector tĩnh đến kỷ nguyên Generative Pre-Training">
+
             <h3>Bối cảnh (Background)</h3>
             <ul>
                 <li><strong>Tư duy Task-specific thống trị:</strong> Ngành NLP bị kìm hãm bởi việc thiết kế các hệ thống AI chuyên biệt, phụ thuộc hoàn toàn vào kiến trúc và dữ liệu gán nhãn riêng cho từng nhiệm vụ.</li>
-                <li><strong>Không thể tái sử dụng:</strong> Một mô hình được huấn luyện cho tác vụ này (ví dụ: phân loại văn bản) gần như không thể áp dụng cho tác vụ khác (ví dụ: trả lởi câu hỏi).</li>
-                <li><strong>Rào cản mở rộng:</strong> Sự thiếu vắng cơ chế hiểu ngôn ngữ tổng quát buộc ngườii học phải thiết kế lại cấu trúc mô hình từ đầu cho mỗi bài toán mới, gây tốn kém chi phí.</li>
+                <li><strong>Không thể tái sử dụng:</strong> Một mô hình được huấn luyện cho tác vụ này (ví dụ: phân loại văn bản) gần như không thể áp dụng cho tác vụ khác (ví dụ: trả lời câu hỏi).</li>
+                <li><strong>Rào cản mở rộng:</strong> Sự thiếu vắng cơ chế hiểu ngôn ngữ tổng quát buộc người học phải thiết kế lại cấu trúc mô hình từ đầu cho mỗi bài toán mới, gây tốn kém chi phí.</li>
             </ul>
 
             <h3>Giải pháp cốt lõi (Core Solution)</h3>
@@ -51,7 +53,7 @@
 
             <h3>Động lực nghiên cứu (Motivation)</h3>
             <ul>
-                <li><strong>Khan hiếm dữ liệu nhãn:</strong> Các mô hình đương thờii phụ thuộc nặng nề vào dữ liệu gán nhãn thủ công – nguồn tài nguyên vốn tốn kém và thường không đủ cho các tác vụ đặc thù.</li>
+                <li><strong>Khan hiếm dữ liệu nhãn:</strong> Các mô hình đương thời phụ thuộc nặng nề vào dữ liệu gán nhãn thủ công – nguồn tài nguyên vốn tốn kém và thường không đủ cho các tác vụ đặc thù.</li>
                 <li><strong>Kiến trúc cô lập:</strong> Các mô hình thường được thiết kế "đo ni đóng giày" cho một tác vụ duy nhất, không có khả năng thích ứng hoặc tái sử dụng.</li>
             </ul>
 
@@ -89,9 +91,11 @@
                 </li>
             </ul>
 
+            <img src="assets/decoder_block.png" alt="Kiến trúc Decoder block của GPT">
+
             <h3>3.2 Tinh chỉnh có giám sát (Supervised Fine-tuning)</h3>
             <ul>
-                <li><strong>Mô tả:</strong> Sau khi có "nền tảng ngôn ngữ", mô hình được chuyển sang học các tác vụ chuyên biệt (như phân loại văn bản, trả lởi câu hỏi) bằng tập dữ liệu nhỏ đã gán nhãn sẵn $C$ (gồm đầu vào $x^1, \ldots, x^m$ và nhãn $y$).</li>
+                <li><strong>Mô tả:</strong> Sau khi có "nền tảng ngôn ngữ", mô hình được chuyển sang học các tác vụ chuyên biệt (như phân loại văn bản, trả lời câu hỏi) bằng tập dữ liệu nhỏ đã gán nhãn sẵn $C$ (gồm đầu vào $x^1, \ldots, x^m$ và nhãn $y$).</li>
                 <li><strong>Cơ chế dự đoán:</strong> Chuỗi đầu vào được đưa qua mô hình GPT đã pre-train. Ta lấy vector trạng thái đầu ra tại vị trí từ cuối cùng ($h_m^l$) của tầng Transformer cuối cùng, đưa qua một <strong>tầng tuyến tính bổ sung (Linear layer)</strong> mới với tham số $W_y$ để dự đoán nhãn $y$:
                     $$P(y \mid x^1, \ldots, x^m) = \text{softmax}(h_m^l W_y)$$
                 </li>
@@ -114,6 +118,8 @@
 
             <p>Để áp dụng cho các tác vụ có cấu trúc đầu vào đa dạng mà không phải thay đổi kiến trúc mạng, GPT-1 làm phẳng mọi đầu vào phức tạp thành một chuỗi duy nhất, phân tách bằng các mã token đặc biệt: Bắt đầu (<code>&lt;s&gt;</code>), Kết thúc (<code>&lt;e&gt;</code>), và Phân tách (<code>$</code>).</p>
 
+            <img src="assets/decoder_task_input.png" alt="Các biến đổi đầu vào cho từng tác vụ">
+
             <h3>4.1 Tác vụ Suy luận hệ quả (Natural Language Inference - NLI)</h3>
             <ul>
                 <li><strong>Cách biến đổi đầu vào:</strong> Nối chuỗi Tiền đề ($p$) và Giả thuyết ($h$) lại với nhau, ngăn cách bằng token phân tách ($):
@@ -121,28 +127,19 @@
                 </li>
                 <li><strong>Ví dụ minh họa:</strong>
                     <ul>
-                        <li><em>Tiền đề ($p$):</em> "Đêm nay trờii đổ mưa rất to."</li>
+                        <li><em>Tiền đề ($p$):</em> "Đêm nay trời đổ mưa rất to."</li>
                         <li><em>Giả thuyết ($h$):</em> "Đường phố có thể bị ngập."</li>
-                        <li><em>Đầu vào sau biến đổi:</em> <code>[&lt;s&gt;; Đêm nay trờii đổ mưa rất to. ; $ ; Đường phố có thể bị ngập. ; &lt;e&gt;]</code></li>
+                        <li><em>Đầu vào sau biến đổi:</em> <code>[&lt;s&gt;; Đêm nay trời đổ mưa rất to. ; $ ; Đường phố có thể bị ngập. ; &lt;e&gt;]</code></li>
                     </ul>
                 </li>
                 <li><strong>Chú thích Benchmark/Dataset:</strong> MNLI, RTE, QNLI.</li>
-                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
             </ul>
 
-            <table>
-                <thead>
-                    <tr><th>Mô hình (Model)</th><th style="text-align:center">MNLI (Matched)</th><th style="text-align:center">MNLI (Mismatched)</th><th style="text-align:center">RTE</th><th style="text-align:center">QNLI</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">80.6</td><td style="text-align:center">80.1</td><td style="text-align:center">61.7</td><td style="text-align:center">82.3</td></tr>
-                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>82.1</strong></td><td style="text-align:center"><strong>81.4</strong></td><td style="text-align:center"><strong>56.0</strong></td><td style="text-align:center"><strong>88.1</strong></td></tr>
-                </tbody>
-            </table>
+            <img src="assets/NLI_result.png" alt="Bảng kết quả NLI">
 
-            <h3>4.2 Tác vụ Trả lởi câu hỏi và Suy luận thực tế (QA &amp; Commonsense Reasoning)</h3>
+            <h3>4.2 Tác vụ trả lời câu hỏi và Suy luận thực tế (QA &amp; Commonsense Reasoning)</h3>
             <ul>
-                <li><strong>Cách biến đổi đầu vào:</strong> Nối ngữ cảnh ($z$) và câu hỏi ($q$) với <strong>từng câu trả lởi ứng viên $a_k$ độc lập</strong>:
+                <li><strong>Cách biến đổi đầu vào:</strong> Nối ngữ cảnh ($z$) và câu hỏi ($q$) với <strong>từng câu trả lời ứng viên $a_k$ độc lập</strong>:
                     $$\text{[\&lt;s\&gt;; } z \text{; } q \text{; \$; } a_k \text{; \&lt;e\&gt;]}$$
                 </li>
                 <li><strong>Ví dụ minh họa:</strong>
@@ -154,64 +151,30 @@
                     </ul>
                 </li>
                 <li><strong>Chú thích Benchmark/Dataset:</strong> RACE, Story Cloze.</li>
-                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
             </ul>
 
-            <table>
-                <thead>
-                    <tr><th>Mô hình (Model)</th><th style="text-align:center">RACE (High)</th><th style="text-align:center">RACE (Total)</th><th style="text-align:center">Story Cloze</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">46.8</td><td style="text-align:center">44.1</td><td style="text-align:center">77.6</td></tr>
-                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>49.1</strong></td><td style="text-align:center"><strong>46.8</strong></td><td style="text-align:center"><strong>86.5</strong></td></tr>
-                </tbody>
-            </table>
+            <img src="assets/QA_commonsense_reasoning_result.png" alt="Bảng kết quả QA và Commonsense Reasoning">
 
-            <h3>4.3 Tác vụ Đánh giá độ tương đồng văn bản (Semantic Similarity)</h3>
+            <h3>4.3 Tác vụ Đánh giá độ tương đồng văn bản &amp; Phân loại văn bản (Semantic Similarity &amp; Text Classification)</h3>
             <ul>
-                <li><strong>Cách biến đổi đầu vào:</strong> Tạo hai chuỗi đảo vị trí và cộng kết quả element-wise:
+                <li><strong>Độ tương đồng — Cách biến đổi đầu vào:</strong> Tạo hai chuỗi đảo vị trí và cộng kết quả element-wise:
                     $$\text{Chuỗi 1: [\&lt;s\&gt;; } Text_1 \text{; \$; } Text_2 \text{; \&lt;e\&gt;]}$$
                     $$\text{Chuỗi 2: [\&lt;s\&gt;; } Text_2 \text{; \$; } Text_1 \text{; \&lt;e\&gt;]}$$
                 </li>
-                <li><strong>Ví dụ minh họa:</strong>
-                    <ul>
-                        <li><em>C1:</em> "Cách này hiệu quả." <em>C2:</em> "Làm vậy kết quả tốt."</li>
-                        <li><em>Đầu vào C1:</em> <code>[&lt;s&gt;; Cách này hiệu quả. ; $ ; Làm vậy kết quả tốt. ; &lt;e&gt;]</code></li>
-                    </ul>
-                </li>
-                <li><strong>Chú thích Benchmark/Dataset:</strong> MRPC, STS-B.</li>
-                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
-            </ul>
-
-            <table>
-                <thead>
-                    <tr><th>Mô hình (Model)</th><th style="text-align:center">MRPC (F1 score)</th><th style="text-align:center">STS-B (Pearson)</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">86.0</td><td style="text-align:center">81.0</td></tr>
-                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>82.3</strong></td><td style="text-align:center"><strong>82.0</strong></td></tr>
-                </tbody>
-            </table>
-
-            <h3>4.4 Tác vụ Phân loại văn bản (Text Classification)</h3>
-            <ul>
-                <li><strong>Cách biến đổi đầu vào:</strong>
+                <li><strong>Phân loại — Cách biến đổi đầu vào:</strong>
                     $$\text{[\&lt;s\&gt;; Văn bản; \&lt;e\&gt;]}$$
                 </li>
-                <li><strong>Ví dụ minh họa:</strong> <code>[&lt;s&gt;; Bộ phim này rất xuất sắc. ; &lt;e&gt;]</code></li>
-                <li><strong>Chú thích Benchmark/Dataset:</strong> CoLA, SST-2.</li>
-                <li><strong>Bảng kết quả thực nghiệm:</strong></li>
+                <li><strong>Ví dụ minh họa:</strong>
+                    <ul>
+                        <li><em>Độ tương đồng C1:</em> "Cách này hiệu quả." <em>C2:</em> "Làm vậy kết quả tốt."</li>
+                        <li><em>Đầu vào độ tương đồng:</em> <code>[&lt;s&gt;; Cách này hiệu quả. ; $ ; Làm vậy kết quả tốt. ; &lt;e&gt;]</code></li>
+                        <li><em>Đầu vào phân loại:</em> <code>[&lt;s&gt;; Bộ phim này rất xuất sắc. ; &lt;e&gt;]</code></li>
+                    </ul>
+                </li>
+                <li><strong>Chú thích Benchmark/Dataset:</strong> MRPC, STS-B, CoLA, SST-2.</li>
             </ul>
 
-            <table>
-                <thead>
-                    <tr><th>Mô hình (Model)</th><th style="text-align:center">CoLA (Matthews)</th><th style="text-align:center">SST-2 (Accuracy)</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><strong>Previous SOTA</strong></td><td style="text-align:center">35.0</td><td style="text-align:center"><strong>93.2</strong></td></tr>
-                    <tr><td><strong>GPT-1 (Ours)</strong></td><td style="text-align:center"><strong>45.4</strong></td><td style="text-align:center">91.3</td></tr>
-                </tbody>
-            </table>
+            <img src="assets/semantic_similarity_classification_result.png" alt="Bảng kết quả Semantic Similarity và Text Classification">
 
             <hr>
 
@@ -227,6 +190,9 @@
                     </ul>
                 </li>
             </ul>
+
+            <img src="assets/Analysis.png" alt="Phân tích hiệu suất theo số tầng và số lượng pre-training updates">
+            <img src="assets/ablation_study.png" alt="Bảng ablation study">
 
             <hr>
 
