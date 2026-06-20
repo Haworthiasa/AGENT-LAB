@@ -22,7 +22,10 @@
         <article class="blog-content">
             <h1>1. Tóm tắt (Executive Summary)</h1>
 
-            <img src="assets/timeline.png" alt="Timeline từ vector tĩnh đến kỷ nguyên Generative Pre-Training">
+            <figure>
+                <img src="assets/timeline.png" alt="Timeline từ vector tĩnh đến kỷ nguyên Generative Pre-Training">
+                <figcaption>Lộ trình phát triển từ mô hình word2vec tĩnh đến GPT-1 — bước chuyển từ biểu diễn từ cô lập sang mô hình ngôn ngữ tiền huấn luyện tổng quát.</figcaption>
+            </figure>
 
             <h3>Bối cảnh (Background)</h3>
             <ul>
@@ -91,7 +94,10 @@
                 </li>
             </ul>
 
-            <img src="assets/decoder_block.png" alt="Kiến trúc Decoder block của GPT">
+            <figure>
+                <img src="assets/decoder_block.png" alt="Kiến trúc Decoder block của GPT">
+                <figcaption>Kiến trúc Transformer Decoder được GPT sử dụng trong giai đoạn tiền huấn luyện không giám sát — gồm Masked Multi-Head Attention và Feed Forward Network.</figcaption>
+            </figure>
 
             <h3>3.2 Tinh chỉnh có giám sát (Supervised Fine-tuning)</h3>
             <ul>
@@ -118,12 +124,15 @@
 
             <p>Để áp dụng cho các tác vụ có cấu trúc đầu vào đa dạng mà không phải thay đổi kiến trúc mạng, GPT-1 làm phẳng mọi đầu vào phức tạp thành một chuỗi duy nhất, phân tách bằng các mã token đặc biệt: Bắt đầu (<code>&lt;s&gt;</code>), Kết thúc (<code>&lt;e&gt;</code>), và Phân tách (<code>$</code>).</p>
 
-            <img src="assets/decoder_task_input.png" alt="Các biến đổi đầu vào cho từng tác vụ">
+            <figure>
+                <img src="assets/decoder_task_input.png" alt="Các biến đổi đầu vào cho từng tác vụ">
+                <figcaption>Cách GPT-1 biến đổi cấu trúc đầu vào đa dạng (NLI, QA, Similarity, Classification) thành chuỗi token phẳng với các token đặc biệt <code>&lt;s&gt;</code>, <code>&lt;e&gt;</code>, <code>$</code>.</figcaption>
+            </figure>
 
             <h3>4.1 Tác vụ Suy luận hệ quả (Natural Language Inference - NLI)</h3>
             <ul>
                 <li><strong>Cách biến đổi đầu vào:</strong> Nối chuỗi Tiền đề ($p$) và Giả thuyết ($h$) lại với nhau, ngăn cách bằng token phân tách ($):
-                    $$\text{[\&lt;s\&gt;; } p \text{; \$; } h \text{; \&lt;e\&gt;]}$$
+                    $$\text{[&lt;s&gt;; } p \text{; \$; } h \text{; &lt;e&gt;]}$$
                 </li>
                 <li><strong>Ví dụ minh họa:</strong>
                     <ul>
@@ -132,15 +141,24 @@
                         <li><em>Đầu vào sau biến đổi:</em> <code>[&lt;s&gt;; Đêm nay trời đổ mưa rất to. ; $ ; Đường phố có thể bị ngập. ; &lt;e&gt;]</code></li>
                     </ul>
                 </li>
-                <li><strong>Chú thích Benchmark/Dataset:</strong> MNLI, RTE, QNLI.</li>
+                <li><strong>Chú thích Benchmark/Dataset:</strong>
+                    <ul>
+                        <li><strong>MNLI (Multi-Genre NLI):</strong> Tập dữ liệu gồm 433k cặp câu trích từ 10 miền văn bản khác nhau (văn bản nói, báo chí, hư cấu...), chia làm hai tập kiểm thử độc lập: <em>Matched</em> (cùng miền huấn luyện) và <em>Mismatched</em> (khác miền).</li>
+                        <li><strong>RTE (Recognizing Textual Entailment):</strong> Tập dữ liệu nhỏ (khoảng vài nghìn mẫu) trích xuất từ các chuỗi cuộc thi thử thách NLP thường niên, kiểm tra khả năng suy luận trên dữ liệu khan hiếm.</li>
+                        <li><strong>QNLI (Question NLI):</strong> Bộ dữ liệu suy luận nhị phân được chuyển đổi từ SQuAD v1.1, xác định xem đoạn văn chứa câu trả lời có suy ra được đáp án cho câu hỏi hay không.</li>
+                    </ul>
+                </li>
             </ul>
 
-            <img src="assets/NLI_result.png" alt="Bảng kết quả NLI">
+            <figure>
+                <img src="assets/NLI_result.png" alt="Bảng kết quả NLI">
+                <figcaption>Kết quả GPT-1 trên các benchmark NLI: MNLI (Matched &amp; Mismatched), RTE, QNLI — vượt qua các baseline mạnh nhất trước đó (LSTM, BiLSTM + Attn) với biên đáng kể.</figcaption>
+            </figure>
 
             <h3>4.2 Tác vụ trả lời câu hỏi và Suy luận thực tế (QA &amp; Commonsense Reasoning)</h3>
             <ul>
                 <li><strong>Cách biến đổi đầu vào:</strong> Nối ngữ cảnh ($z$) và câu hỏi ($q$) với <strong>từng câu trả lời ứng viên $a_k$ độc lập</strong>:
-                    $$\text{[\&lt;s\&gt;; } z \text{; } q \text{; \$; } a_k \text{; \&lt;e\&gt;]}$$
+                    $$\text{[&lt;s&gt;; } z \text{; } q \text{; \$; } a_k \text{; &lt;e&gt;]}$$
                 </li>
                 <li><strong>Ví dụ minh họa:</strong>
                     <ul>
@@ -150,19 +168,27 @@
                         <li><em>Đầu vào chuỗi 1:</em> <code>[&lt;s&gt;; Hải là một sinh viên CNTT. ; Hải dùng gì để lập trình? ; $ ; Laptop ; &lt;e&gt;]</code></li>
                     </ul>
                 </li>
-                <li><strong>Chú thích Benchmark/Dataset:</strong> RACE, Story Cloze.</li>
+                <li><strong>Chú thích Benchmark/Dataset:</strong>
+                    <ul>
+                        <li><strong>RACE (Reading Comprehension Dataset):</strong> Bộ dữ liệu gồm 28k bài viết và gần 100k câu hỏi đọc hiểu trích từ các đề thi tiếng Anh thực tế của học sinh THCS (<em>High</em>) và THPT (<em>Total</em>) tại Trung Quốc, đòi hỏi suy luận logic cao.</li>
+                        <li><strong>Story Cloze Test:</strong> Bài kiểm tra suy luận ngữ cảnh gồm các câu chuyện ngắn 4 câu; mô hình phải chọn ra câu thứ 5 (kết truyện) đúng logic nhất trong 2 phương án cho sẵn.</li>
+                    </ul>
+                </li>
             </ul>
 
-            <img src="assets/QA_commonsense_reasoning_result.png" alt="Bảng kết quả QA và Commonsense Reasoning">
+            <figure>
+                <img src="assets/QA_commonsense_reasoning_result.png" alt="Bảng kết quả QA và Commonsense Reasoning">
+                <figcaption>Kết quả QA trên RACE (High, Middle, Total) và Story Cloze — GPT-1 cải thiện đáng kể so với các phương pháp đặc thù cho từng tác vụ.</figcaption>
+            </figure>
 
             <h3>4.3 Tác vụ Đánh giá độ tương đồng văn bản &amp; Phân loại văn bản (Semantic Similarity &amp; Text Classification)</h3>
             <ul>
                 <li><strong>Độ tương đồng — Cách biến đổi đầu vào:</strong> Tạo hai chuỗi đảo vị trí và cộng kết quả element-wise:
-                    $$\text{Chuỗi 1: [\&lt;s\&gt;; } Text_1 \text{; \$; } Text_2 \text{; \&lt;e\&gt;]}$$
-                    $$\text{Chuỗi 2: [\&lt;s\&gt;; } Text_2 \text{; \$; } Text_1 \text{; \&lt;e\&gt;]}$$
+                    $$\text{Chuỗi 1: [&lt;s&gt;; } Text_1 \text{; \$; } Text_2 \text{; &lt;e&gt;]}$$
+                    $$\text{Chuỗi 2: [&lt;s&gt;; } Text_2 \text{; \$; } Text_1 \text{; &lt;e&gt;]}$$
                 </li>
                 <li><strong>Phân loại — Cách biến đổi đầu vào:</strong>
-                    $$\text{[\&lt;s\&gt;; Văn bản; \&lt;e\&gt;]}$$
+                    $$\text{[&lt;s&gt;; Văn bản; &lt;e&gt;]}$$
                 </li>
                 <li><strong>Ví dụ minh họa:</strong>
                     <ul>
@@ -171,10 +197,24 @@
                         <li><em>Đầu vào phân loại:</em> <code>[&lt;s&gt;; Bộ phim này rất xuất sắc. ; &lt;e&gt;]</code></li>
                     </ul>
                 </li>
-                <li><strong>Chú thích Benchmark/Dataset:</strong> MRPC, STS-B, CoLA, SST-2.</li>
+                <li><strong>Chú thích Benchmark/Dataset (Similarity):</strong>
+                    <ul>
+                        <li><strong>MRPC (Microsoft Research Paraphrase Corpus):</strong> Tập dữ liệu gồm 5.8k cặp câu trích từ các nguồn tin tức trực tuyến, nhiệm vụ là phân loại nhị phân xem hai câu có đồng nghĩa (paraphrase) hay không.</li>
+                        <li><strong>STS-B (Semantic Textual Similarity Benchmark):</strong> Tập hợp khoảng 8.6k cặp câu trích từ tiêu đề tin tức, chú thích ảnh và diễn đàn; đánh giá mức độ tương đồng ngữ nghĩa theo thang điểm liên tục từ 1 đến 5 (đo bằng hệ số tương quan Pearson).</li>
+                    </ul>
+                </li>
+                <li><strong>Chú thích Benchmark/Dataset (Classification):</strong>
+                    <ul>
+                        <li><strong>CoLA (Corpus of Linguistic Acceptability):</strong> Bộ dữ liệu gồm 10.6k câu tiếng Anh được gán nhãn nhị phân bởi các nhà ngôn ngữ học, kiểm tra năng lực của mô hình trong việc nhận diện một câu có đúng ngữ pháp hay không.</li>
+                        <li><strong>SST-2 (Stanford Sentiment Treebank):</strong> Bộ dữ liệu phân tích cảm xúc chứa các câu nhận xét phim ngắn, phân loại nhị phân trạng thái cảm xúc tích cực hoặc tiêu cực.</li>
+                    </ul>
+                </li>
             </ul>
 
-            <img src="assets/semantic_similarity_classification_result.png" alt="Bảng kết quả Semantic Similarity và Text Classification">
+            <figure>
+                <img src="assets/semantic_similarity_classification_result.png" alt="Bảng kết quả Semantic Similarity và Text Classification">
+                <figcaption>Kết quả gộp Similarity (MRPC, STS-B) và Classification (CoLA, SST-2) — GPT-1 thiết lập trạng thái mới trên hầu hết các benchmark.</figcaption>
+            </figure>
 
             <hr>
 
@@ -191,8 +231,14 @@
                 </li>
             </ul>
 
-            <img src="assets/Analysis.png" alt="Phân tích hiệu suất theo số tầng và số lượng pre-training updates">
-            <img src="assets/ablation_study.png" alt="Bảng ablation study">
+            <figure>
+                <img src="assets/Analysis.png" alt="Phân tích hiệu suất theo số tầng và số lượng pre-training updates">
+                <figcaption>Hiệu suất tăng tỉ lệ thuận với số tầng Transformer được tái sử dụng (trái) và số lượng cập nhật pre-training (phải) — khẳng định lợi ích của việc học biểu diễn ngôn ngữ từ dữ liệu lớn.</figcaption>
+            </figure>
+            <figure>
+                <img src="assets/ablation_study.png" alt="Bảng ablation study">
+                <figcaption>Ablation Study cho thấy: mất auxiliary loss <em>L₁</em> làm giảm hiệu suất; Transformer vượt LSTM trung bình 5.6 điểm nhờ khả năng học ngữ cảnh tầm xa.</figcaption>
+            </figure>
 
             <hr>
 
