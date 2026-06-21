@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Lab — Tổng hợp</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-paper: #F9F6F0;
+            --bg-card: #FFFFFF;
+            --text-charcoal: #2D2D2D;
+            --text-muted: #6B6B6B;
+            --accent-brick: #A94442;
+            --accent-brick-hover: #8B3A38;
+            --border-light: #E0DCD4;
+            --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-paper);
+            color: var(--text-charcoal);
+            font-family: var(--font-sans);
+            font-size: 18px;
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .landing-container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem 6rem;
+        }
+
+        .hero-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 3rem 3.5rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+
+        .hero-label {
+            display: inline-block;
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            color: var(--accent-brick);
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-serif);
+            font-size: 2.8rem;
+            font-weight: 600;
+            line-height: 1.15;
+            margin: 0 0 1rem 0;
+            color: var(--text-charcoal);
+        }
+
+        .hero-subtitle {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            margin: 0;
+            max-width: 600px;
+        }
+
+        .section-title {
+            font-family: var(--font-serif);
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--text-charcoal);
+            margin: 0 0 1.5rem 0;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            border-bottom: 2px solid var(--text-charcoal);
+        }
+
+        thead th {
+            text-align: left;
+            padding: 0.75rem 1rem 0.75rem 0;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            color: var(--text-charcoal);
+            white-space: nowrap;
+        }
+
+        thead th:first-child,
+        tbody td:first-child {
+            width: 130px;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        tbody tr:last-child {
+            border-bottom: 2px solid var(--text-charcoal);
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: rgba(0,0,0,0.015);
+        }
+
+        tbody td {
+            padding: 0.9rem 1rem 0.9rem 0;
+            vertical-align: top;
+            color: var(--text-charcoal);
+        }
+
+        a {
+            color: var(--accent-brick);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+
+        a:hover {
+            border-bottom-color: var(--accent-brick);
+        }
+
+        .entry-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 740px) {
+            html { font-size: 16px; }
+
+            .landing-container {
+                padding: 2.5rem 1.25rem 4rem;
+            }
+
+            .hero-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .hero-title {
+                font-size: 2.2rem;
+            }
+
+            thead th,
+            tbody td {
+                padding: 0.6rem 0.75rem 0.6rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="landing-container">
+        <header class="hero-card">
+            <span class="hero-label">AGENT LAB</span>
+            <h1 class="hero-title">Agent Lab</h1>
+            <p class="hero-subtitle">Tổng hợp slide và blog về các paper nền tảng trong AI.</p>
+        </header>
+
+        <main>
+            <h2 class="section-title">Danh sách bài viết</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Paper link</th>
+                            <th>Blog / Slide</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>20 June 2026</td>
+                            <td><a href="https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf">Improving Language Understanding by Generative Pre-Training</a></td>
+                            <td>
+                                <span class="entry-label">blog:</span> <a href="blogs/gpt-1/index.html">GPT-1</a><br>
+                                <span class="entry-label">Slide:</span> —
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>20 June 2026</td>
+                            <td><a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a></td>
+                            <td>
+                                <span class="entry-label">blog:</span> —<br>
+                                <span class="entry-label">Slide:</span> <a href="slides/transformer/index.html">Transformer</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
