@@ -33,6 +33,8 @@
         }
 
         @media (max-width: 740px) {
+            html { font-size: 16px; }
+
             .blog-content figure {
                 width: 100%;
                 margin: 2rem auto;
@@ -45,9 +47,125 @@
                 padding: 0 1.25rem;
             }
         }
+
+        /* TOC navigation */
+        .toc-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .toc-nav {
+                display: block;
+            }
+        }
+
+        .toc-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 44px;
+            height: auto;
+            max-height: 80vh;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.92);
+            border-right: 1px solid var(--border-light);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 0.5rem;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+            transition: width 0.25s ease, padding 0.25s ease, box-shadow 0.25s ease;
+            backdrop-filter: blur(6px);
+        }
+
+        .toc-nav:hover .toc-track {
+            width: 230px;
+            padding: 1.5rem;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .toc-title {
+            font-family: var(--font-serif);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-charcoal);
+            display: block;
+            margin-bottom: 1rem;
+            opacity: 0;
+            white-space: nowrap;
+            transition: opacity 0.2s ease 0.05s;
+        }
+
+        .toc-nav:hover .toc-title {
+            opacity: 1;
+        }
+
+        .toc-track ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc-track li {
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc-track a {
+            display: block;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            color: var(--text-charcoal);
+            text-decoration: none;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid transparent;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .toc-nav:hover .toc-track a {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toc-nav:hover .toc-track li:nth-child(1) a { transition-delay: 0.05s; }
+        .toc-nav:hover .toc-track li:nth-child(2) a { transition-delay: 0.1s; }
+        .toc-nav:hover .toc-track li:nth-child(3) a { transition-delay: 0.15s; }
+        .toc-nav:hover .toc-track li:nth-child(4) a { transition-delay: 0.2s; }
+        .toc-nav:hover .toc-track li:nth-child(5) a { transition-delay: 0.25s; }
+        .toc-nav:hover .toc-track li:nth-child(6) a { transition-delay: 0.3s; }
+
+        .toc-track a:hover,
+        .toc-track a.active {
+            color: var(--accent-brick);
+            border-bottom-color: var(--accent-brick);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
 <body>
+    <nav class="toc-nav" aria-label="Mục lục">
+        <div class="toc-track">
+            <span class="toc-title">Mục lục</span>
+            <ul>
+                <li><a href="#tom-tat">1. Tóm tắt</a></li>
+                <li><a href="#muc-dich">2. Mục đích nghiên cứu</a></li>
+                <li><a href="#gpt-framework">3. GPT Framework</a></li>
+                <li><a href="#task-transformations">4. Input Transformations &amp; Results</a></li>
+                <li><a href="#phan-tich">5. Phân tích thực nghiệm</a></li>
+                <li><a href="#ket-luan">6. Kết luận</a></li>
+            </ul>
+        </div>
+    </nav>
     <div class="blog-container">
         <header class="blog-header">
             <h1>Improving Language Understanding by Generative Pre-Training (GPT-1)</h1>
@@ -55,7 +173,7 @@
         </header>
 
         <article class="blog-content">
-            <h1>1. Tóm tắt</h1>
+            <h1 id="tom-tat">1. Tóm tắt</h1>
 
             <h3>Bối cảnh</h3>
             <ul>
@@ -87,7 +205,7 @@
 
             <hr>
 
-            <h1>2. Mục đích nghiên cứu</h1>
+            <h1 id="muc-dich">2. Mục đích nghiên cứu</h1>
 
             <h3>Động lực nghiên cứu</h3>
             <ul>
@@ -104,7 +222,7 @@
 
             <hr>
 
-            <h1>3. GPT Framework</h1>
+            <h1 id="gpt-framework">3. GPT Framework</h1>
 
             <h3>3.1 Tiền huấn luyện không giám sát (Unsupervised Pre-training)</h3>
             <ul>
@@ -155,7 +273,7 @@
 
             <hr>
 
-            <h1>4. Task-specific Input Transformations &amp; Results</h1>
+            <h1 id="task-transformations">4. Task-specific Input Transformations &amp; Results</h1>
 
             <p>Để áp dụng cho các tác vụ có cấu trúc đầu vào đa dạng mà không phải thay đổi kiến trúc mạng, GPT-1 làm phẳng mọi đầu vào phức tạp thành một chuỗi duy nhất, phân tách bằng các mã token đặc biệt: Bắt đầu (<code>&lt;s&gt;</code>), Kết thúc (<code>&lt;e&gt;</code>), và Phân tách (<code>$</code>).</p>
 
@@ -257,7 +375,7 @@
 
             <hr>
 
-            <h1>5. Phân tích thực nghiệm</h1>
+            <h1 id="phan-tich">5. Phân tích thực nghiệm</h1>
 
             <ul>
                 <li><strong>Số lượng tầng chuyển giao:</strong> Hiệu suất tăng tỉ lệ thuận với số lượng tầng Transformer được tái sử dụng từ giai đoạn pre-training.</li>
@@ -285,12 +403,34 @@
 
             <hr>
 
-            <h1>6. Kết luận</h1>
+            <h1 id="ket-luan">6. Kết luận</h1>
 
             <p><em>GPT-1 đã đặt nền móng cho kỷ nguyên của các mô hình ngôn ngữ lớn (LLMs) bằng cách chứng minh rằng việc tiền huấn luyện trên dữ liệu khổng lồ, kết hợp với kiến trúc Transformer và tinh chỉnh có giám sát, có thể tạo ra một hệ thống hiểu ngôn ngữ tổng quát mạnh mẽ vượt xa các mô hình chuyên biệt trước đó.</em></p>
         </article>
     </div>
 
+    <script>
+        (function() {
+            var headings = document.querySelectorAll('.blog-content h1[id]');
+            var links = document.querySelectorAll('.toc-track a[href^="#"]');
+            if (!headings.length || !links.length) return;
+
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        links.forEach(function(link) { link.classList.remove('active'); });
+                        var activeLink = document.querySelector('.toc-track a[href="#' + entry.target.id + '"]');
+                        if (activeLink) activeLink.classList.add('active');
+                    }
+                });
+            }, {
+                rootMargin: '-20% 0px -60% 0px',
+                threshold: 0
+            });
+
+            headings.forEach(function(h) { observer.observe(h); });
+        })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <script>
