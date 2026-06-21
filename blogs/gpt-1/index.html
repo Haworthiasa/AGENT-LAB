@@ -11,6 +11,41 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <link rel="stylesheet" href="../../shared/css/blog-anthropic.css">
+    <style>
+        .blog-content figure {
+            width: min(900px, 100vw);
+            margin: 2.5rem 0;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .blog-content figure img {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .blog-content figcaption {
+            max-width: 700px;
+            margin: 0.75rem auto 0;
+            padding: 0 1.5rem;
+        }
+
+        @media (max-width: 740px) {
+            .blog-content figure {
+                width: 100%;
+                margin: 2rem auto;
+                position: static;
+                left: auto;
+                transform: none;
+            }
+
+            .blog-content figcaption {
+                padding: 0 1.25rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="blog-container">
