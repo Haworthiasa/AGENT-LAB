@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attention Is All You Need: Hiểu sâu Transformer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai.min.css">
+    <link rel="stylesheet" href="../../shared/css/blog-anthropic.css">
+    <style>
+        .blog-content figure {
+            width: min(900px, 100vw);
+            margin: 2.5rem 0;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .blog-content figure img {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .blog-content figcaption {
+            max-width: 700px;
+            margin: 0.75rem auto 0;
+            padding: 0 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        @media (max-width: 740px) {
+            html { font-size: 16px; }
+
+            .blog-content figure {
+                width: 100%;
+                margin: 2rem auto;
+                position: static;
+                left: auto;
+                transform: none;
+            }
+
+            .blog-content figcaption {
+                padding: 0 1.25rem;
+            }
+        }
+
+        .toc-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .toc-nav {
+                display: block;
+            }
+        }
+
+        .toc-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 44px;
+            height: auto;
+            max-height: 80vh;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.92);
+            border-right: 1px solid var(--border-light);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 0.5rem;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+            transition: width 0.25s ease, padding 0.25s ease, box-shadow 0.25s ease;
+            backdrop-filter: blur(6px);
+        }
+
+        .toc-nav:hover .toc-track {
+            width: 240px;
+            padding: 1.5rem;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .toc-title {
+            font-family: var(--font-serif);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-charcoal);
+            display: block;
+            margin-bottom: 1rem;
+            opacity: 0;
+            white-space: nowrap;
+            transition: opacity 0.2s ease 0.05s;
+        }
+
+        .toc-nav:hover .toc-title {
+            opacity: 1;
+        }
+
+        .toc-track ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc-track li {
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc-track a {
+            display: block;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            color: var(--text-charcoal);
+            text-decoration: none;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid transparent;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .toc-nav:hover .toc-track a {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toc-nav:hover .toc-track li:nth-child(1) a { transition-delay: 0.02s; }
+        .toc-nav:hover .toc-track li:nth-child(2) a { transition-delay: 0.04s; }
+        .toc-nav:hover .toc-track li:nth-child(3) a { transition-delay: 0.06s; }
+        .toc-nav:hover .toc-track li:nth-child(4) a { transition-delay: 0.08s; }
+        .toc-nav:hover .toc-track li:nth-child(5) a { transition-delay: 0.10s; }
+        .toc-nav:hover .toc-track li:nth-child(6) a { transition-delay: 0.12s; }
+        .toc-nav:hover .toc-track li:nth-child(7) a { transition-delay: 0.14s; }
+        .toc-nav:hover .toc-track li:nth-child(8) a { transition-delay: 0.16s; }
+        .toc-nav:hover .toc-track li:nth-child(9) a { transition-delay: 0.18s; }
+        .toc-nav:hover .toc-track li:nth-child(10) a { transition-delay: 0.20s; }
+
+        .toc-track a:hover,
+        .toc-track a.active {
+            color: var(--accent-brick);
+            border-bottom-color: var(--accent-brick);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .blog-content .formula-table {
+            overflow-x: auto;
+            margin: 2rem 0;
+        }
+
+        .blog-content .formula-table table {
+            min-width: 500px;
+        }
+
+        .blog-content pre {
+            width: min(960px, 95vw);
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1.25rem 1.5rem;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 740px) {
+            .blog-content pre {
+                width: 100%;
+                position: static;
+                left: auto;
+                transform: none;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="toc-nav" aria-label="Mục lục">
+        <div class="toc-track">
+            <span class="toc-title">Mục lục</span>
+            <ul>
+                <li><a href="#tom-tat">1. Tóm tắt</a></li>
+                <li><a href="#muc-dich">2. Mục đích nghiên cứu</a></li>
+                <li><a href="#bai-toan">3. Bài toán Sequence Transduction</a></li>
+                <li><a href="#kien-truc">4. Kiến trúc Transformer</a></li>
+                <li><a href="#huan-luyen">5. Huấn luyện Transformer</a></li>
+                <li><a href="#ket-qua">6. Kết quả thực nghiệm</a></li>
+                <li><a href="#self-attention">7. Vì sao Self-Attention hiệu quả?</a></li>
+                <li><a href="#han-che">8. Hạn chế &amp; hướng phát triển</a></li>
+                <li><a href="#ket-luan">9. Kết luận</a></li>
+                <li><a href="#nguon-tham-khao">10. Nguồn tham khảo</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="blog-container">
+        <header class="blog-header">
+            <h1>Attention Is All You Need - Kiến trúc Transformer</h1>
+            <div class="blog-meta">Transformer · 24 June 2026</div>
+        </header>
+
+        <article class="blog-content">
+
+            <!-- SECTION 1: Tóm tắt -->
+            <h1 id="tom-tat">1. Tóm tắt</h1>
+
+            <h3>Bối cảnh</h3>
+            <ul>
+                <li><strong>Trước Transformer:</strong> Các mô hình sequence-to-sequence mạnh nhất thường dựa trên RNN/LSTM/GRU hoặc CNN, đôi khi kết hợp thêm attention (Bahdanau-2014) để giảm bottleneck giữa encoder và decoder.</li>
+                <li><strong>Vấn đề chính:</strong> RNN xử lý chuỗi theo thứ tự tuần tự, nên khó song song hóa khi huấn luyện và đường truyền thông tin giữa hai token xa nhau phải đi qua nhiều bước trung gian.</li>
+                <li><strong>Ý tưởng đột phá:</strong> Transformer loại bỏ hoàn toàn recurrence và convolution trong kiến trúc chính, thay bằng <strong>self-attention</strong> để mỗi token có thể tương tác trực tiếp với mọi token khác trong cùng chuỗi.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/Transformer_Timeline.png" alt="Transformer Timeline">
+                <figcaption>Lộ trình phát triển từ Seq2Seq với RNN đến Transformer — bước đột phá loại bỏ hoàn toàn recurrence và thay bằng self-attention.</figcaption>
+            </figure>
+
+            <h3>Giải pháp</h3>
+            <ul>
+                <li><strong>Kiến trúc encoder-decoder thuần attention:</strong> Encoder tạo ra một ma trận biểu diễn ngữ cảnh cho toàn bộ câu nguồn; decoder sinh chuỗi đích theo cơ chế tự hồi quy.</li>
+                <li><strong>Scaled Dot-Product Attention:</strong> Tính độ liên quan giữa Query và Key, chuẩn hóa bằng softmax, rồi lấy tổng có trọng số của Value.</li>
+                <li><strong>Multi-Head Attention:</strong> Chạy nhiều attention head song song để mô hình học nhiều kiểu quan hệ khác nhau: cú pháp, tham chiếu đại từ, quan hệ cục bộ, phụ thuộc xa, căn chỉnh source-target.</li>
+                <li><strong>Positional Encoding:</strong> Vì không còn RNN/CNN, mô hình cần thêm tín hiệu vị trí vào embedding để phân biệt thứ tự token.</li>
+            </ul>
+
+            <h3>Tác động</h3>
+            <ul>
+                <li><strong>Song song hóa tốt hơn:</strong> Tính toán chủ yếu là phép nhân ma trận lớn, phù hợp GPU/TPU.</li>
+                <li><strong>Học phụ thuộc xa hiệu quả:</strong> Self-attention tạo đường nối trực tiếp giữa các vị trí trong chuỗi.</li>
+                <li><strong>Nền tảng cho LLM hiện đại:</strong> Transformer là nền móng cho BERT, GPT, T5 và đa số mô hình ngôn ngữ lớn hiện nay.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 2: Mục đích nghiên cứu -->
+            <h1 id="muc-dich">2. Mục đích nghiên cứu</h1>
+
+            <h3>Động lực nghiên cứu (Motivation)</h3>
+            <ul>
+                <li><strong>Giảm tính tuần tự:</strong> RNN phải tính $h_t$ sau $h_{t-1}$, làm nghẽn song song hóa trong training.</li>
+                <li><strong>Rút ngắn đường phụ thuộc:</strong> Với RNN, thông tin từ token đầu đến token cuối phải đi qua nhiều bước; với self-attention, mỗi token có thể attend trực tiếp đến token khác.</li>
+                <li><strong>Đơn giản hóa kiến trúc:</strong> Thay vì dùng RNN/CNN làm lõi rồi gắn attention bên ngoài, Transformer dùng attention làm cơ chế truyền thông tin chính.</li>
+            </ul>
+
+            <h3>Mục tiêu cụ thể (Specific Objectives)</h3>
+            <ul>
+                <li>Xây dựng mô hình sequence transduction dựa hoàn toàn trên attention.</li>
+                <li>Giảm thời gian huấn luyện nhờ khả năng song song hóa.</li>
+                <li>Chứng minh kiến trúc có thể tổng quát sang tác vụ khác.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 3: Bài toán Sequence Transduction -->
+            <h1 id="bai-toan">3. Bài toán Sequence Transduction</h1>
+
+            <h3>Định nghĩa</h3>
+            <p>Sequence transduction là bài toán biến đổi một chuỗi đầu vào thành một chuỗi đầu ra có độ dài không xác định, ví dụ:</p>
+            <ul>
+                <li>Dịch máy: <code>I love machine learning</code> $\rightarrow$ <code>Tôi yêu học máy</code></li>
+                <li>Tóm tắt: văn bản dài $\rightarrow$ bản tóm tắt ngắn</li>
+                <li>Hỏi đáp: câu hỏi/ngữ cảnh $\rightarrow$ câu trả lời</li>
+                <li>Speech/text: tín hiệu hoặc văn bản $\rightarrow$ chuỗi khác</li>
+            </ul>
+
+            <h3>Công thức xác suất</h3>
+            <p>Với câu nguồn $x=(x_1,\dots,x_n)$ và câu đích $y=(y_1,\dots,y_m)$, mô hình tự hồi quy học:</p>
+
+            $$
+            P(y \mid x) = \prod_{t=1}^{m} P(y_t \mid y_{&lt;t}, x)
+            $$
+
+            <p>Trong Transformer gốc, decoder sinh token từng bước. Khi huấn luyện, ta dùng target đã biết nhưng vẫn dùng <strong>causal mask</strong> để vị trí $t$ không nhìn thấy các token tương lai $y_{>t}$.</p>
+
+            <hr>
+
+            <!-- SECTION 4: Kiến trúc Transformer -->
+            <h1 id="kien-truc">4. Kiến trúc Transformer (Main Architecture)</h1>
+
+            <p>Transformer gốc dùng kiến trúc <strong>encoder-decoder</strong>. Với cấu hình base trong paper:</p>
+            <ul>
+                <li>$N=6$ encoder layers và $N=6$ decoder layers.</li>
+                <li>$d_{model}=512$.</li>
+                <li>$h=8$ attention heads.</li>
+                <li>$d_k=d_v=64$ cho mỗi head.</li>
+                <li>$d_{ff}=2048$ cho feed-forward network.</li>
+                <li>Dropout cơ bản: $0.1$.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/transformer_architecture.png" alt="Transformer Architecture">
+                <figcaption>Kiến trúc Transformer gốc với encoder-decoder stack — multi-head attention, feed-forward networks, residual connections và layer normalization.</figcaption>
+            </figure>
+
+            <h2 id="4-1">4.1 Big Picture: Encoder-Decoder Stack</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Encoder nhận chuỗi nguồn và trả về ma trận memory:</p>
+
+            $$
+            H = \text{Encoder}(x) = [h_1, h_2, \dots, h_n], \quad h_i \in \mathbb{R}^{d_{model}}
+            $$
+
+            <p>Decoder dùng các target token trước đó và memory $H$ để dự đoán token tiếp theo:</p>
+
+            $$
+            P(y_t \mid y_{&lt;t}, x) = \text{softmax}(W_o s_t)
+            $$
+
+            <p>Trong đó $s_t$ là hidden state của decoder tại vị trí $t$.</p>
+            <ul>
+                <li>Encoder không ép toàn bộ câu nguồn vào một vector duy nhất; nó trả về memory $H$ gồm một vector ngữ cảnh cho từng token nguồn.</li>
+                <li>Trong cross-attention, decoder dùng trạng thái hiện tại làm Query, còn memory $H$ của encoder làm Key/Value.</li>
+                <li>Trực giác dịch máy: khi sinh token "mèo", decoder có thể attend mạnh vào token <code>cats</code> trong câu nguồn.</li>
+            </ul>
+
+            <hr>
+
+            <h2 id="4-2">4.2 Embedding và Positional Encoding</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Transformer không dùng recurrence hay convolution, nên bản thân token embedding không chứa thông tin thứ tự. Vì vậy paper cộng thêm positional encoding $PE$ vào input embedding $E(x)$:</p>
+
+            $$
+            Z_0 = E(x) + PE
+            $$
+
+            <p>Với sinusoidal positional encoding:</p>
+
+            $$
+            PE_{(pos,2i)} = \sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+            $$
+
+            $$
+            PE_{(pos,2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+            $$
+
+            <figure>
+                <img src="assets/PE.png" alt="Positional Encoding Visualization">
+                <figcaption>Minh họa sinusoidal positional encoding — mỗi cặp chiều (sin/cos) có tần số khác nhau, giúp mô hình phân biệt vị trí token.</figcaption>
+            </figure>
+
+            <pre><code class="language-python">class PositionalEncoding(nn.Module):
+    """Sinusoidal positional encoding đúng công thức Transformer gốc.
+
+    Input/Output shape:
+        x: [batch, seq_len, d_model]
+    """
+
+    def __init__(self, d_model: int, max_len: int = 5000, dropout: float = 0.1):
+        super().__init__()
+        self.dropout = nn.Dropout(dropout)  # Dropout áp dụng sau khi cộng PE
+
+        # Khởi tạo ma trận PE kích thước [max_len, d_model]
+        pe = torch.zeros(max_len, d_model)
+        # position: vector [0, 1, 2, ..., max_len-1] — vị trí của từng token
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+
+        # div_term tạo các tần số khác nhau cho mỗi cặp chiều sin/cos
+        # Công thức: exp(-(2i) * log(10000) / d_model) = 1 / 10000^(2i/d_model)
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
+        )
+
+        # Chiều chẵn (0, 2, 4, ...) dùng sin
+        pe[:, 0::2] = torch.sin(position * div_term)
+        # Chiều lẻ (1, 3, 5, ...) dùng cos
+        pe[:, 1::2] = torch.cos(position * div_term)
+
+        # Thêm batch dimension để broadcast: [1, max_len, d_model]
+        pe = pe.unsqueeze(0)
+        # register_buffer: PE tự động chuyển device cùng model, không phải tham số học
+        self.register_buffer("pe", pe)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        seq_len = x.size(1)  # Lấy độ dài sequence thực tế từ input
+        x = x + self.pe[:, :seq_len]  # Cộng PE vào embedding
+        return self.dropout(x)  # Dropout trước khi vào encoder layer</code></pre>
+
+            <h3>Tại sao cộng thay vì nối (concat)?</h3>
+            <ul>
+                <li>Cộng giữ nguyên kích thước $d_{model}$, giúp interface giữa các layer không đổi, ngược với nối.</li>
+                <li>Sinusoidal PE giúp mô hình suy luận vị trí tương đối và có khả năng extrapolate tốt hơn sang chuỗi dài hơn so với độ dài đã thấy trong training.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/positional_encoding_heatmap.png" alt="Positional Encoding Heatmap">
+                <figcaption>Heatmap của positional encoding — các chiều tần số thấp (trái) biến đổi chậm, tần số cao (phải) biến đổi nhanh qua các vị trí.</figcaption>
+            </figure>
+
+            <hr>
+
+            <h2 id="4-3">4.3 Query-Key-Value và Scaled Dot-Product Attention</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Attention ánh xạ Query, Key, Value thành output. Với ma trận:</p>
+            <ul>
+                <li>$Q \in \mathbb{R}^{L_q \times d_k}$</li>
+                <li>$K \in \mathbb{R}^{L_k \times d_k}$</li>
+                <li>$V \in \mathbb{R}^{L_k \times d_v}$</li>
+            </ul>
+
+            <p>Scaled Dot-Product Attention được định nghĩa:</p>
+
+            $$
+            \text{Attention}(Q,K,V)=\text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+            $$
+
+            <p>Hệ số $\sqrt{d_k}$ giúp tránh dot-product quá lớn khi $d_k$ cao, vì softmax có thể bão hòa và gradient trở nên rất nhỏ.</p>
+
+            <h3>Trực giác Q-K-V</h3>
+            <ul>
+                <li><strong>Query:</strong> token hiện tại đang cần thông tin gì?</li>
+                <li><strong>Key:</strong> mỗi token khác có "nhãn so khớp" gì?</li>
+                <li><strong>Value:</strong> nội dung thực sự được lấy về khi attention weight cao.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/attention_mechanism.png" alt="Attention Mechanism">
+                <figcaption>Scaled Dot-Product Attention — ba bước: (1) nhân Q với K transpose, (2) chia $\sqrt{d_k}$ và softmax, (3) nhân với V để lấy context vector.</figcaption>
+            </figure>
+
+            <p>Trong self-attention, $Q,K,V$ không phải ba input riêng biệt; chúng được chiếu từ cùng input $X$:</p>
+
+            $$
+            Q=XW_Q, \quad K=XW_K, \quad V=XW_V
+            $$
+
+            <ul>
+                <li>Có thể hiểu attention theo ba bước: so Query với Key, softmax để tạo attention weights, rồi lấy tổng có trọng số của Value.</li>
+                <li>Ví dụ trực giác: trong câu <code>The animal didn't cross because it was tired</code>, Query của <code>it</code> có thể khớp mạnh với Key của <code>animal</code>, nên lấy nhiều thông tin Value từ <code>animal</code>.</li>
+                <li>Với Transformer base, nếu $X \in \mathbb{R}^{L \times 512}$ và mỗi head có $d_k=d_v=64$, thì $Q,K,V \in \mathbb{R}^{L \times 64}$ và attention map có kích thước $L \times L$.</li>
+            </ul>
+
+            <pre><code class="language-python">class ScaledDotProductAttention(nn.Module):
+    """Scaled Dot-Product Attention — lõi của cơ chế attention.
+
+    Q, K, V shape thường là:
+        [batch, num_heads, seq_len, d_k]
+    mask shape cần broadcast được về:
+        [batch, num_heads, query_len, key_len]
+    """
+
+    def __init__(self, dropout: float = 0.1):
+        super().__init__()
+        self.dropout = nn.Dropout(dropout)  # Dropout trên attention weights
+
+    def forward(
+        self,
+        Q: torch.Tensor,
+        K: torch.Tensor,
+        V: torch.Tensor,
+        mask: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        d_k = Q.size(-1)  # Kích thước chiều key, dùng để scale
+
+        # Bước 1: Tính attention score = Q @ K^T, chia sqrt(d_k) để tránh bão hòa softmax
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)
+
+        if mask is not None:
+            # Bước 2: Che các vị trí bị cấm bằng -1e9 để softmax về 0
+            scores = scores.masked_fill(mask == 0, -1e9)
+
+        # Bước 3: Softmax theo chiều key — mỗi query có phân phối attention
+        attn_weights = torch.softmax(scores, dim=-1)
+        attn_weights = self.dropout(attn_weights)
+
+        # Bước 4: Context = tổng có trọng số của Value theo attention weights
+        context = torch.matmul(attn_weights, V)
+        return context, attn_weights</code></pre>
+
+            <figure>
+                <img src="assets/attention_heatmap.png" alt="Attention Heatmap">
+                <figcaption>Attention heatmap minh họa mức độ liên quan giữa các token — mỗi hàng là phân phối attention của một query lên tất cả key.</figcaption>
+            </figure>
+
+            <hr>
+
+            <h2 id="4-4">4.4 Multi-Head Attention</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Một attention head có thể bị buộc phải học nhiều quan hệ cùng lúc. Multi-head attention chia không gian biểu diễn thành nhiều head song song:</p>
+
+            $$
+            \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)
+            $$
+
+            $$
+            \text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1,\dots,\text{head}_h)W^O
+            $$
+
+            <p>Với Transformer base: $h=8$, $d_k=d_v=64$, tổng chi phí xấp xỉ một attention head có full dimension vì mỗi head nhỏ hơn.</p>
+            <ul>
+                <li>Một head có thể học local/identity pattern, chẳng hạn token "chú ý" mạnh vào chính nó hoặc láng giềng gần.</li>
+                <li>Một head khác có thể học reference/semantic pattern, ví dụ quan hệ <code>it → animal</code>.</li>
+                <li>Multi-head attention giúp mô hình học nhiều loại quan hệ song song thay vì ép tất cả vào một attention map duy nhất.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/multihead.png" alt="Multi-Head Attention">
+                <figcaption>Multi-Head Attention — nhiều head song song (mỗi head có bộ chiếu Q/K/V riêng), concat kết quả rồi chiếu qua $W_O$.</figcaption>
+            </figure>
+
+            <pre><code class="language-python">class MultiHeadAttention(nn.Module):
+    """Multi-Head Attention — chạy nhiều head attention song song.
+
+    Dùng được cho:
+    - Encoder self-attention: q=k=v=encoder hidden states.
+    - Decoder masked self-attention: q=k=v=decoder hidden states + causal mask.
+    - Cross-attention: q từ decoder, k/v từ encoder memory.
+    """
+
+    def __init__(self, d_model: int, num_heads: int, dropout: float = 0.1):
+        super().__init__()
+        assert d_model % num_heads == 0, "d_model phải chia hết cho num_heads"
+
+        self.d_model = d_model        # Kích thước embedding đầu vào/ra
+        self.num_heads = num_heads    # Số lượng head song song
+        self.d_k = d_model // num_heads  # Kích thước mỗi head
+
+        # Ba phép chiếu tuyến tính riêng cho Q, K, V (mỗi head có bộ chiếu riêng bên trong)
+        self.W_q = nn.Linear(d_model, d_model)  # Query projection
+        self.W_k = nn.Linear(d_model, d_model)  # Key projection
+        self.W_v = nn.Linear(d_model, d_model)  # Value projection
+        self.W_o = nn.Linear(d_model, d_model)  # Output projection — trộn lại các heads
+
+        self.attention = ScaledDotProductAttention(dropout)
+
+    def _split_heads(self, x: torch.Tensor) -> torch.Tensor:
+        """Tách tensor từ [batch, seq_len, d_model] thành [batch, num_heads, seq_len, d_k]."""
+        batch_size = x.size(0)
+        return x.view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
+
+    def _combine_heads(self, x: torch.Tensor) -> torch.Tensor:
+        """Gộp các head lại: [batch, num_heads, seq_len, d_k] -> [batch, seq_len, d_model]."""
+        batch_size = x.size(0)
+        return x.transpose(1, 2).contiguous().view(batch_size, -1, self.d_model)
+
+    def forward(
+        self,
+        q: torch.Tensor,
+        k: torch.Tensor,
+        v: torch.Tensor,
+        mask: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        # Bước 1: Chiếu Q, K, V qua linear rồi tách thành nhiều head
+        Q = self._split_heads(self.W_q(q))  # [B, H, L_q, d_k]
+        K = self._split_heads(self.W_k(k))  # [B, H, L_k, d_k]
+        V = self._split_heads(self.W_v(v))  # [B, H, L_k, d_v]
+
+        # Bước 2: Attention song song trên tất cả các head
+        context, attn_weights = self.attention(Q, K, V, mask)
+
+        # Bước 3: Concat các head và chiếu về d_model
+        context = self._combine_heads(context)
+        output = self.W_o(context)
+        return output, attn_weights</code></pre>
+
+            <hr>
+
+            <h2 id="4-5">4.5 Position-wise Feed-Forward Network</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Sau attention, mỗi vị trí đi qua cùng một mạng feed-forward hai lớp:</p>
+
+            $$
+            FFN(x)=max(0, xW_1+b_1)W_2+b_2
+            $$
+
+            <p>Với Transformer base:</p>
+            <ul>
+                <li>Input/output: $d_{model}=512$.</li>
+                <li>Hidden dimension: $d_{ff}=2048$.</li>
+                <li>Cùng công thức áp dụng độc lập cho từng token position.</li>
+            </ul>
+
+            <h3>Công dụng</h3>
+            <ul>
+                <li>Biến đổi phi tuyến từng token sau khi đã trộn ngữ cảnh.</li>
+                <li>Tăng năng lực biểu diễn mà không cần thêm tương tác giữa các vị trí.</li>
+                <li>Giữ kiến trúc ổn định vì cùng một MLP được áp dụng cho mọi token.</li>
+            </ul>
+
+            <h3>Trực giác</h3>
+            <ul>
+                <li>Attention trộn thông tin giữa các token.</li>
+                <li>FFN biến đổi phi tuyến biểu diễn tại từng token.</li>
+                <li>Add &amp; Norm giúp training ổn định hơn và giữ gradient đi qua residual path.</li>
+            </ul>
+
+            <pre><code class="language-python">class PositionwiseFeedForward(nn.Module):
+    """FFN hai lớp dùng chung cho mọi token position — biến đổi phi tuyến từng token."""
+
+    def __init__(self, d_model: int = 512, d_ff: int = 2048, dropout: float = 0.1):
+        super().__init__()
+        # Lớp tuyến tính thứ nhất: mở rộng từ d_model lên d_ff (512 -> 2048)
+        self.linear1 = nn.Linear(d_model, d_ff)
+        # Lớp tuyến tính thứ hai: chiếu ngược từ d_ff về d_model
+        self.linear2 = nn.Linear(d_ff, d_model)
+        self.dropout = nn.Dropout(dropout)  # Dropout sau ReLU để chống overfitting
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # linear1 -> ReLU (phi tuyến) -> dropout -> linear2
+        return self.linear2(self.dropout(F.relu(self.linear1(x))))</code></pre>
+
+            <hr>
+
+            <h2 id="4-6">4.6 Encoder Layer</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Mỗi encoder layer gồm hai sub-layer:</p>
+            <ol>
+                <li>Multi-head self-attention không mask.</li>
+                <li>Position-wise feed-forward network.</li>
+            </ol>
+
+            <figure>
+                <img src="assets/encoder.png" alt="Encoder Layer">
+                <figcaption>Encoder layer: self-attention &rarr; Add &amp; Norm &rarr; FFN &rarr; Add &amp; Norm.</figcaption>
+            </figure>
+
+            <p>Mỗi sub-layer được bọc bởi residual connection và layer normalization:</p>
+
+            $$
+            LayerNorm(x + Sublayer(x))
+            $$
+
+            <p>Luồng encoder layer:</p>
+
+            $$
+            x_tilde = LayerNorm(x + MultiHeadSelfAttention(x, x, x))
+            $$
+
+            $$
+            EncoderLayer(x) = LayerNorm(x_tilde + FFN(x_tilde))
+            $$
+
+            <h3>Công dụng</h3>
+            <ul>
+                <li>Tạo biểu diễn ngữ cảnh cho toàn bộ câu nguồn ở từng layer.</li>
+                <li>Cho phép mỗi token nhìn toàn bộ source sequence để gom thông tin liên quan.</li>
+                <li>Cung cấp memory $H$ cho decoder dùng ở cross-attention.</li>
+                <li>Encoder self-attention là <strong>unmasked</strong>: mỗi token nguồn được nhìn toàn bộ câu nguồn, trừ các vị trí padding.</li>
+                <li>Mỗi encoder layer có cùng dạng khối nhưng <strong>không chia sẻ trọng số</strong> với các layer khác.</li>
+            </ul>
+
+            <pre><code class="language-python">class EncoderLayer(nn.Module):
+    """Một encoder block theo kiến trúc gốc: self-attention -> Add&Norm -> FFN -> Add&Norm."""
+
+    def __init__(self, d_model: int = 512, num_heads: int = 8, d_ff: int = 2048, dropout: float = 0.1):
+        super().__init__()
+        # Sub-layer 1: Multi-head self-attention (không mask)
+        self.self_attn = MultiHeadAttention(d_model, num_heads, dropout)
+        # Sub-layer 2: Position-wise feed-forward network
+        self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)
+        # Layer normalization sau mỗi sub-layer
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)  # Dropout trên output của mỗi sub-layer
+
+    def forward(self, x: torch.Tensor, src_mask: torch.Tensor | None = None):
+        # Sub-layer 1: Self-attention -> residual -> layer norm
+        attn_out, attn_weights = self.self_attn(x, x, x, src_mask)
+        x = self.norm1(x + self.dropout(attn_out))
+
+        # Sub-layer 2: FFN -> residual -> layer norm
+        ffn_out = self.ffn(x)
+        x = self.norm2(x + self.dropout(ffn_out))
+        return x, attn_weights</code></pre>
+
+            <hr>
+
+            <h2 id="4-7">4.7 Causal Mask Attention</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Trong decoder self-attention, mô hình được huấn luyện với toàn bộ target sequence đã biết. Nếu không có causal mask, vị trí $t$ có thể nhìn thấy các token tương lai $y_{>t}$, dẫn đến rò rỉ đáp án và phá vỡ giả định tự hồi quy.</p>
+
+            <p>Causal mask đảm bảo:</p>
+
+            $$
+            P(y_t \mid y_{&lt;t},x) \quad \text{không được phụ thuộc vào} \quad y_{>t}
+            $$
+
+            <p>Về mặt attention score, mask được áp dụng <strong>trước softmax</strong>:</p>
+
+            $$
+            \text{MaskedAttention}(Q,K,V)=\text{softmax}\left(\frac{QK^T}{\sqrt{d_k}} + M\right)V
+            $$
+
+            <p>Trong đó $M_{ij}=0$ nếu vị trí query $i$ được phép nhìn key $j$, và $M_{ij}=-\infty$ nếu $j>i$.</p>
+
+            <h3>Công dụng</h3>
+            <ul>
+                <li>Giữ đúng cơ chế sinh từng bước: token hiện tại chỉ dựa vào các token trước đó.</li>
+                <li>Cho phép training song song trên toàn bộ target sequence mà không làm decoder nhìn trước đáp án.</li>
+                <li>Kết hợp với padding mask để vừa chặn token tương lai, vừa bỏ qua các vị trí <code>&lt;pad&gt;</code>.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/causal_mask.jpg" alt="Causal Mask">
+                <figcaption>Causal mask — ma trận tam giác dưới, vị trí $(i,j)$ bị che ($-\infty$) nếu $j > i$, đảm bảo decoder không nhìn thấy token tương lai.</figcaption>
+            </figure>
+
+            <pre><code class="language-python">def make_padding_mask(tokens: torch.Tensor, pad_id: int = 0) -> torch.Tensor:
+    """Tạo padding mask: True ở token thật, False ở &lt;pad&gt;.
+
+    Output shape [batch, 1, 1, seq_len] để broadcast với attention scores.
+    unsqueeze(1) cho num_heads dim, unsqueeze(2) cho key_len dim.
+    """
+    return (tokens != pad_id).unsqueeze(1).unsqueeze(2)
+
+
+def make_causal_mask(seq_len: int, device: torch.device | None = None) -> torch.Tensor:
+    """Tam giác dưới: vị trí t chỉ nhìn được các vị trí <= t.
+
+    Output shape [1, 1, seq_len, seq_len] để broadcast qua batch và heads.
+    Dùng torch.tril để lấy ma trận tam giác dưới (lower triangular).
+    """
+    return torch.tril(
+        torch.ones(seq_len, seq_len, dtype=torch.bool, device=device)
+    ).view(1, 1, seq_len, seq_len)
+
+
+def make_tgt_mask(tgt_tokens: torch.Tensor, pad_id: int = 0) -> torch.Tensor:
+    """Kết hợp padding mask và causal mask cho decoder self-attention.
+    AND logic: vị trí token phải vừa không phải pad vừa không phải tương lai.
+    """
+    tgt_pad_mask = make_padding_mask(tgt_tokens, pad_id)  # [B, 1, 1, T]
+    causal_mask = make_causal_mask(
+        tgt_tokens.size(1),
+        tgt_tokens.device,
+    )  # [1, 1, T, T]
+    return tgt_pad_mask & causal_mask</code></pre>
+
+            <hr>
+
+            <h2 id="4-8">4.8 Cross Attention</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Cross attention là sub-layer giúp decoder truy cập thông tin từ encoder. Khác với self-attention, ba thành phần $Q,K,V$ không đến từ cùng một chuỗi:</p>
+
+            $$
+            Q = YW_Q, \quad K = HW_K, \quad V = HW_V
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$Y \in \mathbb{R}^{T \times d_{model}}$ là hidden states hiện tại của decoder.</li>
+                <li>$H \in \mathbb{R}^{S \times d_{model}}$ là encoder memory của source sequence.</li>
+                <li>$Q$ biểu diễn "decoder đang cần thông tin gì".</li>
+                <li>$K,V$ biểu diễn "source có thông tin gì để cung cấp".</li>
+            </ul>
+
+            <p>Sau đó cross attention vẫn dùng cùng công thức scaled dot-product attention:</p>
+
+            $$
+            \text{CrossAttention}(Y,H)=\text{Attention}(YW_Q, HW_K, HW_V)
+            $$
+
+            <h3>Công dụng</h3>
+            <ul>
+                <li>Tạo soft alignment giữa target token đang sinh và các source token liên quan.</li>
+                <li>Cho phép decoder dùng lại toàn bộ encoder memory thay vì ép câu nguồn vào một vector duy nhất.</li>
+                <li>Trong dịch máy, khi decoder sinh một từ đích, cross attention có thể tập trung vào các từ nguồn tương ứng.</li>
+            </ul>
+
+            <pre><code class="language-python">class CrossAttention(nn.Module):
+    """Cross-attention: query từ decoder, key/value từ encoder memory.
+    Đây là cầu nối giữa encoder và decoder — decoder "hỏi" encoder để lấy thông tin.
+    """
+
+    def __init__(self, d_model: int = 512, num_heads: int = 8, dropout: float = 0.1):
+        super().__init__()
+        self.attn = MultiHeadAttention(d_model, num_heads, dropout)
+
+    def forward(
+        self,
+        decoder_states: torch.Tensor,  # Query: trạng thái decoder hiện tại
+        encoder_memory: torch.Tensor,  # Key/Value: output cuối của encoder
+        src_mask: torch.Tensor | None = None,  # Padding mask của source
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        # Q từ decoder, K và V cùng từ encoder memory
+        return self.attn(
+            q=decoder_states,
+            k=encoder_memory,
+            v=encoder_memory,
+            mask=src_mask,
+        )</code></pre>
+
+            <hr>
+
+            <h2 id="4-9">4.9 Output Projection và Softmax</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Decoder output được chiếu về vocabulary size để dự đoán token tiếp theo:</p>
+
+            $$
+            logits_t = s_t W_o + b_o
+            $$
+
+            $$
+            P(y_t \mid y_{&lt;t},x)=\text{softmax}(\text{logits}_t)
+            $$
+
+            <figure>
+                <img src="assets/softmax.png" alt="Output Projection and Softmax">
+                <figcaption>Output projection: hidden state của decoder được chiếu qua linear layer để sinh phân phối xác suất trên toàn bộ từ vựng.</figcaption>
+            </figure>
+
+            <p>Paper gốc dùng learned embeddings cho input/output token và dùng softmax thông thường để sinh xác suất token. Các embedding layer và pre-softmax linear transformation chia sẻ cùng weight matrix trong mô hình.</p>
+
+            <h3>Công dụng</h3>
+            <ul>
+                <li>Chuyển hidden state sang không gian từ vựng để tạo dự đoán.</li>
+                <li>Biến logits thành xác suất để lấy token kế tiếp khi decoding.</li>
+                <li>Cho phép dùng chung cơ chế train/inference với cross-entropy và sampling/beam search.</li>
+            </ul>
+
+            <pre><code class="language-python">class Generator(nn.Module):
+    """Chiếu decoder hidden states về vocabulary logits để dự đoán token tiếp theo."""
+
+    def __init__(self, d_model: int, vocab_size: int):
+        super().__init__()
+        self.proj = nn.Linear(d_model, vocab_size)  # Chiếu từ d_model lên không gian từ vựng
+
+    def forward(self, decoder_states: torch.Tensor) -> torch.Tensor:
+        # Output shape: [batch, tgt_len, vocab_size] — logits cho mỗi token position
+        return self.proj(decoder_states)
+
+
+def sequence_cross_entropy(logits: torch.Tensor, labels: torch.Tensor, pad_id: int = 0) -> torch.Tensor:
+    """Cross-entropy loss cho sequence, bỏ qua padding positions."""
+    vocab_size = logits.size(-1)
+    return F.cross_entropy(
+        logits.reshape(-1, vocab_size),  # Gộp batch và seq_len để tính loss theo từng token
+        labels.reshape(-1),               # Nhãn dạng phẳng tương ứng
+        ignore_index=pad_id,              # Bỏ qua vị trí pad khi tính loss
+    )</code></pre>
+
+            <hr>
+
+            <h2 id="4-10">4.10 Decoder Layer</h2>
+
+            <h3>Lý thuyết</h3>
+            <p>Mỗi decoder layer gồm ba sub-layer theo đúng thứ tự:</p>
+            <ol>
+                <li><strong>Masked multi-head self-attention:</strong> token ở vị trí $t$ chỉ được nhìn các token $\le t$.</li>
+                <li><strong>Encoder-decoder attention / cross-attention:</strong> Query đến từ decoder, Key/Value đến từ encoder memory $H$.</li>
+                <li><strong>Position-wise feed-forward network.</strong></li>
+            </ol>
+
+            <p>Mỗi sub-layer đều được bọc bởi residual connection và layer normalization:</p>
+
+            $$
+            LayerNorm(x + Sublayer(x))
+            $$
+
+            <p>Luồng decoder layer có thể viết gọn:</p>
+
+            $$
+            y_1 = LayerNorm(y + MaskedSelfAttention(y,y,y))
+            $$
+
+            $$
+            y_2 = LayerNorm(y_1 + CrossAttention(y_1,H,H))
+            $$
+
+            $$
+            DecoderLayer(y,H)=LayerNorm(y_2 + FFN(y_2))
+            $$
+
+            <h3>Công dụng</h3>
+            <ul>
+                <li>Masked self-attention xây dựng ngữ cảnh bên trái trong target sequence.</li>
+                <li>Cross-attention lấy thông tin từ source sequence thông qua encoder memory.</li>
+                <li>FFN biến đổi phi tuyến từng vị trí sau khi đã trộn thông tin target và source.</li>
+            </ul>
+
+            <pre><code class="language-python">class DecoderLayer(nn.Module):
+    """Một decoder block: masked self-attn -> cross-attn -> FFN, mỗi bước có Add&Norm."""
+
+    def __init__(self, d_model: int = 512, num_heads: int = 8, d_ff: int = 2048, dropout: float = 0.1):
+        super().__init__()
+        # Sub-layer 1: Masked self-attention — không nhìn token tương lai
+        self.self_attn = MultiHeadAttention(d_model, num_heads, dropout)
+        # Sub-layer 2: Cross-attention — query từ decoder, key/value từ encoder
+        self.cross_attn = MultiHeadAttention(d_model, num_heads, dropout)
+        # Sub-layer 3: Feed-forward network
+        self.ffn = PositionwiseFeedForward(d_model, d_ff, dropout)
+
+        self.norm1 = nn.LayerNorm(d_model)  # Layer norm sau self-attention
+        self.norm2 = nn.LayerNorm(d_model)  # Layer norm sau cross-attention
+        self.norm3 = nn.LayerNorm(d_model)  # Layer norm sau FFN
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(
+        self,
+        y: torch.Tensor,               # Hidden states của decoder
+        encoder_memory: torch.Tensor,   # Memory từ encoder
+        tgt_mask: torch.Tensor | None = None,  # Causal mask + padding mask
+        src_mask: torch.Tensor | None = None,  # Padding mask của source
+    ):
+        # Bước 1: Masked self-attention — q=k=v=y với causal mask
+        self_attn_out, self_attn_weights = self.self_attn(y, y, y, tgt_mask)
+        y = self.norm1(y + self.dropout(self_attn_out))
+
+        # Bước 2: Cross-attention — q từ decoder, k/v từ encoder memory
+        cross_attn_out, cross_attn_weights = self.cross_attn(y, encoder_memory, encoder_memory, src_mask)
+        y = self.norm2(y + self.dropout(cross_attn_out))
+
+        # Bước 3: Feed-forward network áp dụng cho từng token
+        ffn_out = self.ffn(y)
+        y = self.norm3(y + self.dropout(ffn_out))
+        return y, self_attn_weights, cross_attn_weights</code></pre>
+
+            <hr>
+
+            <!-- SECTION 5: Huấn luyện Transformer -->
+            <h1 id="huan-luyen">5. Huấn luyện Transformer</h1>
+
+            <h2 id="5-1">5.1 Mục tiêu huấn luyện</h2>
+
+            <p>Với translation, mô hình tối đa hóa log-likelihood của chuỗi đích:</p>
+
+            $$
+            \mathcal{L} = -\sum_{t=1}^{m}\log P(y_t \mid y_{&lt;t},x)
+            $$
+
+            <p>Trong training, decoder input thường là target sequence dịch phải:</p>
+            <ul>
+                <li>Decoder input: <code>&lt;START&gt; Tôi yêu mèo</code></li>
+                <li>Expected output: <code>Tôi yêu mèo &lt;END&gt;</code></li>
+                <li>Mỗi vị trí decoder học dự đoán token tiếp theo, nên một sequence tạo ra nhiều supervision signals song song.</li>
+                <li>Dù target đã biết trong training, causal mask vẫn bắt buộc để mô hình không nhìn thấy các token tương lai.</li>
+            </ul>
+
+            <pre><code class="language-python">def training_step(model, batch, optimizer, scheduler=None, pad_id: int = 0):
+    """Một bước train tối thiểu cho Transformer encoder-decoder."""
+    model.train()
+    src_ids, tgt_ids = batch  # src_ids: [B, src_len], tgt_ids: [B, tgt_len]
+
+    # Teacher forcing: decoder input bỏ token cuối, label bỏ token đầu
+    tgt_input_ids = tgt_ids[:, :-1]  # [B, tgt_len-1] — input cho decoder
+    tgt_labels = tgt_ids[:, 1:]      # [B, tgt_len-1] — token cần dự đoán
+
+    # Tạo masks
+    src_mask = make_padding_mask(src_ids, pad_id)  # Che padding của source
+    tgt_mask = make_tgt_mask(tgt_input_ids, pad_id)  # Causal + padding mask cho decoder
+
+    # Forward pass: model trả về logits [B, tgt_len-1, vocab_size]
+    logits = model(src_ids, tgt_input_ids, src_mask, tgt_mask)
+    loss = sequence_cross_entropy(logits, tgt_labels, pad_id)
+
+    # Backward và cập nhật weights
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+    if scheduler is not None:
+        scheduler.step()  # Cập nhật learning rate theo schedule
+
+    return loss.item()</code></pre>
+
+            <hr>
+
+            <h2 id="5-2">5.2 Optimizer, Learning Rate Schedule, Regularization</h2>
+
+            <h3>Công thức learning rate</h3>
+            <p>Paper dùng Adam với:</p>
+            <ul>
+                <li>$\beta_1=0.9$</li>
+                <li>$\beta_2=0.98$</li>
+                <li>$\epsilon=10^{-9}$</li>
+                <li><code>warmup_steps = 4000</code></li>
+            </ul>
+
+            <p>Learning rate schedule:</p>
+
+            $$
+            \text{lrate} = d_{model}^{-0.5}\cdot \min(\text{step}^{-0.5},\; \text{step}\cdot \text{warmup}^{-1.5})
+            $$
+
+            <h3>Regularization</h3>
+            <ul>
+                <li>Residual dropout trước Add &amp; Norm.</li>
+                <li>Dropout trên tổng embedding + positional encoding.</li>
+                <li>Label smoothing với $\epsilon_{ls}=0.1$.</li>
+                <li>Checkpoint averaging và beam search được dùng khi inference trong thí nghiệm dịch máy.</li>
+            </ul>
+
+            <pre><code class="language-python">class NoamScheduler:
+    """Learning-rate schedule trong paper Attention Is All You Need.
+
+    Trong warmup phase: lr tăng tuyến tính.
+    Sau warmup: lr giảm theo tỷ lệ step^-0.5.
+    lr = d_model^-0.5 * min(step^-0.5, step * warmup^-1.5)
+    """
+
+    def __init__(self, optimizer: torch.optim.Optimizer, d_model: int = 512, warmup_steps: int = 4000, factor: float = 1.0):
+        self.optimizer = optimizer       # Optimizer cần điều chỉnh lr
+        self.d_model = d_model           # Hệ số chuẩn hóa: d_model^-0.5
+        self.warmup_steps = warmup_steps  # Số bước warmup (trong paper: 4000)
+        self.factor = factor             # Hệ số nhân (mặc định 1.0)
+        self.step_num = 0                # Đếm số bước đã chạy
+
+    def rate(self, step: int | None = None) -> float:
+        """Tính learning rate tại step cho trước (hoặc step hiện tại)."""
+        step = self.step_num if step is None else step
+        step = max(step, 1)  # Tránh division by zero
+        # Công thức Noam: d_model^-0.5 * min(step^-0.5, step * warmup_steps^-1.5)
+        return self.factor * (self.d_model ** -0.5) * min(
+            step ** -0.5,                    # Decay phase: lr giảm dần
+            step * (self.warmup_steps ** -1.5),  # Warmup phase: lr tăng tuyến tính
+        )
+
+    def step(self):
+        """Tăng step counter và cập nhật lr cho optimizer."""
+        self.step_num += 1
+        lr = self.rate()
+        for group in self.optimizer.param_groups:
+            group["lr"] = lr
+        return lr</code></pre>
+
+            <hr>
+
+            <!-- SECTION 6: Kết quả thực nghiệm -->
+            <h1 id="ket-qua">6. Kết quả thực nghiệm (Results)</h1>
+
+            <p>Phần kết quả trong paper không chỉ báo cáo điểm BLEU cao hơn. Ba bảng chính còn trả lời ba câu hỏi khác nhau:</p>
+            <ul>
+                <li><strong>Machine Translation:</strong> Transformer có dịch tốt hơn các mô hình trước đó không, và chi phí huấn luyện có thấp hơn không?</li>
+                <li><strong>Model Variations:</strong> Thành phần nào trong kiến trúc Transformer thực sự quan trọng?</li>
+                <li><strong>Parsing:</strong> Kiến trúc này có tổng quát sang tác vụ ngoài dịch máy không?</li>
+            </ul>
+
+            <h2 id="6-1">6.1 Machine Translation: EN-DE và EN-FR</h2>
+            <p>Transformer được đánh giá trên hai benchmark dịch máy lớn của WMT 2014: <strong>English-to-German (EN-DE)</strong> và <strong>English-to-French (EN-FR)</strong>. Bảng kết quả cho thấy Transformer không chỉ đạt BLEU cao hơn các mô hình mạnh trước đó, mà còn có chi phí huấn luyện thấp hơn đáng kể.</p>
+
+            <figure>
+                <img src="assets/BLEU_EN-DE_En-FR.png" alt="BLEU EN-DE EN-FR">
+                <figcaption>Kết quả dịch máy trên WMT 2014 EN-DE và EN-FR — Transformer (big) đạt BLEU cao nhất với chi phí huấn luyện thấp hơn đáng kể so với các mô hình ensemble trước đó.</figcaption>
+            </figure>
+
+            <h3>Điểm nổi bật</h3>
+            <ul>
+                <li>Transformer base đã vượt nhiều mô hình dịch máy mạnh trước đó như ConvS2S và GNMT + RL trên EN-DE.</li>
+                <li>Transformer big đạt kết quả tốt nhất trong bảng trên cả EN-DE và EN-FR.</li>
+                <li>Chi phí huấn luyện của Transformer base chỉ khoảng <strong>3.3 · 10¹⁸ FLOPs</strong>, thấp hơn nhiều so với các mô hình ensemble.</li>
+            </ul>
+
+            <h3>Ý nghĩa chính</h3>
+            <ul>
+                <li>Kết quả này chứng minh rằng <strong>attention có thể trở thành cơ chế chính của mô hình sequence transduction</strong>, không chỉ là thành phần phụ trợ cho RNN/LSTM.</li>
+                <li>Transformer đạt đồng thời hai mục tiêu quan trọng: <strong>chất lượng dịch cao</strong> và <strong>hiệu quả huấn luyện tốt</strong>.</li>
+            </ul>
+
+            <h2 id="6-2">6.2 Ablation và Model Variations</h2>
+            <p>Paper tiếp tục phân tích các biến thể của Transformer để kiểm tra tác động của từng thành phần kiến trúc: số head attention, kích thước mô hình, dropout, positional encoding và số bước huấn luyện.</p>
+
+            <figure>
+                <img src="assets/model_variations.png" alt="Model Variations">
+                <figcaption>Ablation study — ảnh hưởng của số head attention, kích thước mô hình, dropout, positional encoding và số bước huấn luyện lên BLEU score.</figcaption>
+            </figure>
+
+            <h3>Điểm nổi bật</h3>
+            <ul>
+                <li><strong>Số head ảnh hưởng đến chất lượng:</strong> quá ít head làm mô hình mất khả năng học nhiều kiểu quan hệ song song.</li>
+                <li><strong>Kích thước mô hình lớn hơn thường tốt hơn:</strong> tăng $d_{model}$ và $d_{ff}$ giúp cải thiện BLEU, nhưng làm tăng số tham số và chi phí huấn luyện.</li>
+                <li><strong>Learned positional embedding gần tương đương sinusoidal positional encoding:</strong> kết quả cho thấy điểm khác biệt không lớn trong thí nghiệm của paper.</li>
+            </ul>
+
+            <h3>Ý nghĩa chính</h3>
+            <ul>
+                <li>Ablation cho thấy hiệu quả của Transformer không đến từ một chi tiết đơn lẻ, mà từ sự kết hợp giữa <strong>multi-head attention</strong>, <strong>feed-forward dimension lớn</strong>, <strong>regularization hợp lý</strong> và <strong>training schedule ổn định</strong>.</li>
+                <li>Việc sinusoidal PE và learned PE cho kết quả gần nhau cho thấy điểm cốt lõi không nằm ở dạng positional encoding cụ thể, mà ở việc mô hình cần có <strong>tín hiệu vị trí</strong> để xử lý chuỗi.</li>
+            </ul>
+
+            <h2 id="6-3">6.3 Generalization sang Constituency Parsing</h2>
+            <p>Ngoài dịch máy, paper còn thử Transformer trên bài toán <strong>English constituency parsing</strong> để kiểm tra khả năng tổng quát hóa của kiến trúc sang một tác vụ sequence transduction khác.</p>
+
+            <figure>
+                <img src="assets/parsing.png" alt="Parsing Results">
+                <figcaption>Kết quả constituency parsing — Transformer đạt 91.3 F1 (WSJ) và 92.7 F1 (semi-supervised), cạnh tranh với các mô hình parsing chuyên biệt.</figcaption>
+            </figure>
+
+            <h3>Điểm nổi bật</h3>
+            <ul>
+                <li>Transformer có thể xử lý tốt tác vụ có đầu ra cấu trúc, không chỉ dịch máy.</li>
+                <li>Mô hình đạt kết quả mạnh ngay cả khi dùng kiến trúc tổng quát.</li>
+                <li>Kết quả parsing củng cố nhận định rằng self-attention học được các quan hệ cú pháp và phụ thuộc dài trong câu.</li>
+            </ul>
+
+            <h3>Ý nghĩa chính</h3>
+            <ul>
+                <li>Thí nghiệm parsing cho thấy Transformer là một kiến trúc <strong>tổng quát cho sequence transduction</strong>, không bị giới hạn trong machine translation.</li>
+                <li>Đây là một dấu hiệu quan trọng cho sự phát triển sau này của Transformer trong nhiều tác vụ NLP khác nhau như summarization, question answering, language modeling và code generation.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 7: Vì sao Self-Attention hiệu quả -->
+            <h1 id="self-attention">7. Vì sao Self-Attention hiệu quả?</h1>
+
+            <h3>Ba tiêu chí paper dùng để so sánh</h3>
+            <ul>
+                <li><strong>Per-layer computational complexity:</strong> chi phí tính toán mỗi layer.</li>
+                <li><strong>Sequential operations:</strong> số bước tuần tự tối thiểu, ảnh hưởng trực tiếp đến khả năng song song hóa.</li>
+                <li><strong>Maximum path length:</strong> độ dài đường truyền giữa hai vị trí bất kỳ, ảnh hưởng đến học phụ thuộc xa.</li>
+            </ul>
+
+            <h3>So sánh trực giác</h3>
+            <div class="formula-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kiểu layer</th>
+                            <th>Điểm mạnh</th>
+                            <th>Điểm yếu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>RNN</td>
+                            <td>Tự nhiên cho chuỗi</td>
+                            <td>Tuần tự, khó song song hóa, path dài</td>
+                        </tr>
+                        <tr>
+                            <td>CNN</td>
+                            <td>Song song hơn RNN</td>
+                            <td>Cần nhiều layer để nối token xa</td>
+                        </tr>
+                        <tr>
+                            <td>Self-attention</td>
+                            <td>Mọi token nối trực tiếp, song song tốt</td>
+                            <td>Chi phí attention tăng theo $O(n^2)$ theo độ dài chuỗi</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <ul>
+                <li>RNN truyền thông tin theo chuỗi $1 \rightarrow 2 \rightarrow 3 \rightarrow 4$, nên token xa nhau phải đi qua nhiều bước trung gian.</li>
+                <li>Transformer cho phép token 1 tương tác trực tiếp với token 4 trong một attention layer.</li>
+                <li>Điểm mạnh attention cũng là nguồn chi phí chính: mọi token nhìn mọi token, tạo attention map kích thước $n \times n$.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 8: Hạn chế và hướng phát triển -->
+            <h1 id="han-che">8. Hạn chế và các hướng phát triển sau Transformer</h1>
+
+            <h3>Hạn chế</h3>
+            <ul>
+                <li><strong>Chi phí attention theo cặp token:</strong> attention map có kích thước $n \times n$.</li>
+                <li><strong>Tốn VRAM với context dài:</strong> ví dụ $n=1024$ tạo hơn một triệu attention scores cho mỗi head/batch item.</li>
+                <li><strong>Nhạy với training recipe:</strong> optimizer, warmup, dropout, label smoothing và batch size đều ảnh hưởng chất lượng.</li>
+            </ul>
+
+            <h3>Các cải tiến hiện đại</h3>
+            <ul>
+                <li><strong>RoPE / relative positional encoding:</strong> cải thiện biểu diễn vị trí, đặc biệt với context dài.</li>
+                <li><strong>FlashAttention:</strong> tính attention tiết kiệm bộ nhớ hơn.</li>
+                <li><strong>Grouped Query Attention:</strong> giảm chi phí KV cache trong inference.</li>
+                <li><strong>Long-context attention:</strong> xử lý chuỗi dài bằng sparse/sliding/window/global attention.</li>
+                <li><strong>Mixture-of-Experts:</strong> tăng số tham số nhưng chỉ kích hoạt một phần expert cho mỗi token.</li>
+            </ul>
+
+            <h3>Kết luận phần này</h3>
+            <p>Kiến trúc hiện đại thường không bỏ Transformer; chúng tối ưu các điểm nghẽn của Transformer: position, memory, attention efficiency, inference cache và scaling.</p>
+
+            <hr>
+
+            <!-- SECTION 9: Kết luận -->
+            <h1 id="ket-luan">9. Kết luận</h1>
+
+            <p><em>Transformer thay đổi hướng phát triển của NLP bằng cách chứng minh rằng attention có thể là lõi kiến trúc, không chỉ là module phụ trợ bên cạnh RNN/CNN. Điểm mạnh của mô hình đến từ ba yếu tố kết hợp: self-attention giúp token tương tác trực tiếp, multi-head attention học nhiều kiểu quan hệ song song, và positional encoding bổ sung thứ tự cho một kiến trúc không tuần tự. Kết quả trên WMT 2014 và các ablation trong paper cho thấy kiến trúc này vừa đạt chất lượng cao, vừa huấn luyện hiệu quả hơn, từ đó trở thành nền tảng cho các mô hình ngôn ngữ lớn hiện đại.</em></p>
+
+            <hr>
+
+            <!-- SECTION 10: Nguồn tham khảo -->
+            <h1 id="nguon-tham-khao">10. Nguồn tham khảo</h1>
+
+            <ul>
+                <li>Vaswani et al., <strong>Attention Is All You Need</strong>, arXiv:1706.03762v7.<br>
+                    <a href="https://arxiv.org/html/1706.03762v7">https://arxiv.org/html/1706.03762v7</a></li>
+                <li>Slides tham khảo: <strong>Transformer — Attention Is All You Need</strong>.<br>
+                    <a href="https://haworthiasa.github.io/AGENT-LAB/slides/transformer/index.html">https://haworthiasa.github.io/AGENT-LAB/slides/transformer/index.html</a></li>
+            </ul>
+
+        </article>
+    </div>
+
+    <script>
+        (function() {
+            var headings = document.querySelectorAll('.blog-content h1[id]');
+            var links = document.querySelectorAll('.toc-track a[href^="#"]');
+            if (!headings.length || !links.length) return;
+
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        links.forEach(function(link) { link.classList.remove('active'); });
+                        var activeLink = document.querySelector('.toc-track a[href="#' + entry.target.id + '"]');
+                        if (activeLink) activeLink.classList.add('active');
+                    }
+                });
+            }, {
+                rootMargin: '-20% 0px -60% 0px',
+                threshold: 0
+            });
+
+            headings.forEach(function(h) { observer.observe(h); });
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+        hljs.highlightAll();
+    </script>
+</body>
+</html>
