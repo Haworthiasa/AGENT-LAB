@@ -16,20 +16,27 @@
 </head>
 <body>
     <nav class="toc-nav" aria-label="Mục lục">
-        <div class="toc-track">
-            <span class="toc-title">Mục lục</span>
-            <ul>
-                <li><a href="#tom-tat">1. Tóm tắt</a></li>
-                <li><a href="#muc-dich">2. Mục đích nghiên cứu</a></li>
-                <li><a href="#bai-toan">3. Bài toán Sequence Transduction</a></li>
-                <li><a href="#kien-truc">4. Kiến trúc Transformer</a></li>
-                <li><a href="#huan-luyen">5. Huấn luyện Transformer</a></li>
-                <li><a href="#ket-qua">6. Kết quả thực nghiệm</a></li>
-                <li><a href="#self-attention">7. Vì sao Self-Attention hiệu quả?</a></li>
-                <li><a href="#han-che">8. Hạn chế &amp; hướng phát triển</a></li>
-                <li><a href="#ket-luan">9. Kết luận</a></li>
-                <li><a href="#nguon-tham-khao">10. Nguồn tham khảo</a></li>
-            </ul>
+        <button class="toc-toggle" aria-label="Mở mục lục" aria-expanded="false">
+            <div class="hamburger">
+                <span></span><span></span><span></span>
+            </div>
+        </button>
+        <div class="toc-panel">
+            <span class="toc-title">MỤC LỤC</span>
+            <div class="toc-track">
+                <ul>
+                    <li><a href="#tom-tat">1. Tóm tắt</a></li>
+                    <li><a href="#muc-dich">2. Mục đích nghiên cứu</a></li>
+                    <li><a href="#bai-toan">3. Bài toán Sequence Transduction</a></li>
+                    <li><a href="#kien-truc">4. Kiến trúc Transformer</a></li>
+                    <li><a href="#huan-luyen">5. Huấn luyện Transformer</a></li>
+                    <li><a href="#ket-qua">6. Kết quả thực nghiệm</a></li>
+                    <li><a href="#self-attention">7. Vì sao Self-Attention hiệu quả?</a></li>
+                    <li><a href="#han-che">8. Hạn chế &amp; hướng phát triển</a></li>
+                    <li><a href="#ket-luan">9. Kết luận</a></li>
+                    <li><a href="#nguon-tham-khao">10. Nguồn tham khảo</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
@@ -1032,24 +1039,60 @@ def sequence_cross_entropy(logits: torch.Tensor, labels: torch.Tensor, pad_id: i
 
     <script>
         (function() {
-            var headings = document.querySelectorAll('.blog-content h1[id]');
-            var links = document.querySelectorAll('.toc-track a[href^="#"]');
-            if (!headings.length || !links.length) return;
+            var nav = document.querySelector('.toc-nav');
+            var toggle = nav.querySelector('.toc-toggle');
+            var panel = nav.querySelector('.toc-panel');
 
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        links.forEach(function(link) { link.classList.remove('active'); });
-                        var activeLink = document.querySelector('.toc-track a[href="#' + entry.target.id + '"]');
-                        if (activeLink) activeLink.classList.add('active');
-                    }
-                });
-            }, {
-                rootMargin: '-20% 0px -60% 0px',
-                threshold: 0
+            function openNav() {
+                nav.classList.add('open');
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.setAttribute('aria-label', 'Đóng mục lục');
+            }
+
+            function closeNav() {
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute('aria-label', 'Mở mục lục');
+            }
+
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (nav.classList.contains('open')) {
+                    closeNav();
+                } else {
+                    openNav();
+                }
             });
 
-            headings.forEach(function(h) { observer.observe(h); });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && nav.classList.contains('open')) {
+                    closeNav();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (nav.classList.contains('open') && !nav.contains(e.target)) {
+                    closeNav();
+                }
+            });
+
+            var headings = document.querySelectorAll('.blog-content h1[id]');
+            var links = document.querySelectorAll('.toc-track a[href^="#"]');
+            if (headings.length && links.length) {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            links.forEach(function(link) { link.classList.remove('active'); });
+                            var activeLink = document.querySelector('.toc-track a[href="#' + entry.target.id + '"]');
+                            if (activeLink) activeLink.classList.add('active');
+                        }
+                    });
+                }, {
+                    rootMargin: '-20% 0px -60% 0px',
+                    threshold: 0
+                });
+                headings.forEach(function(h) { observer.observe(h); });
+            }
         })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>

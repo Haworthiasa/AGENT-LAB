@@ -48,6 +48,7 @@
     height: 100vh;
     z-index: 100;
     display: none;
+    pointer-events: none;
 }
 
 @media (min-width: 1024px) {
@@ -56,46 +57,98 @@
     }
 }
 
-.toc-track {
+/* === TOGGLE BUTTON === */
+.toc-toggle {
     position: absolute;
     top: 50%;
     left: 0;
+    z-index: 2;
     transform: translateY(-50%);
-    width: 44px;
-    height: auto;
-    max-height: 80vh;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.92);
-    border-right: 1px solid var(--border-light);
-    border-radius: 0 8px 8px 0;
-    padding: 1rem 0.5rem;
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
-    transition: width 0.25s ease, padding 0.25s ease, box-shadow 0.25s ease;
-    backdrop-filter: blur(6px);
+    width: 36px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
 }
 
-.toc-nav:hover .toc-track {
-    width: 240px;
-    padding: 1.5rem;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+.toc-toggle:hover {
+    background: rgba(0, 0, 0, 0.03);
 }
 
-.toc-title {
-    font-family: var(--font-serif);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-charcoal);
+.toc-toggle .hamburger {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.toc-toggle .hamburger span {
     display: block;
-    margin-bottom: 1rem;
-    opacity: 0;
-    white-space: nowrap;
-    transition: opacity 0.2s ease 0.05s;
+    width: 18px;
+    height: 2px;
+    background: rgba(45, 45, 45, 0.5);
+    border-radius: 1px;
+    transition: opacity 0.25s ease;
 }
 
-.toc-nav:hover .toc-title {
+.toc-toggle .hamburger span:nth-child(1) {
+    width: 18px;
+    margin-bottom: 6px;
+}
+
+.toc-toggle .hamburger span:nth-child(2) {
+    width: 14px;
+}
+
+.toc-toggle .hamburger span:nth-child(3) {
+    width: 10px;
+    margin-top: 6px;
+}
+
+/* === PANEL === */
+.toc-panel {
+    position: absolute;
+    top: 45%;
+    left: 44px;
+    transform: translateY(-50%) translateX(-8px);
+    width: 260px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toc-nav.open .toc-panel {
+    transform: translateY(-50%) translateX(0);
     opacity: 1;
 }
 
+/* === TITLE === */
+.toc-title {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+/* === LIST === */
 .toc-track ul {
     list-style: none;
     margin: 0;
@@ -113,36 +166,16 @@
     font-size: 0.85rem;
     color: var(--text-charcoal);
     text-decoration: none;
-    padding: 0.4rem 0;
-    border-bottom: 1px solid transparent;
+    padding: 0.35rem 0;
     white-space: nowrap;
-    opacity: 0;
-    transform: translateX(-8px);
-    transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
 }
-
-.toc-nav:hover .toc-track a {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.toc-nav:hover .toc-track li:nth-child(1) a { transition-delay: 0.02s; }
-.toc-nav:hover .toc-track li:nth-child(2) a { transition-delay: 0.04s; }
-.toc-nav:hover .toc-track li:nth-child(3) a { transition-delay: 0.06s; }
-.toc-nav:hover .toc-track li:nth-child(4) a { transition-delay: 0.08s; }
-.toc-nav:hover .toc-track li:nth-child(5) a { transition-delay: 0.10s; }
-.toc-nav:hover .toc-track li:nth-child(6) a { transition-delay: 0.12s; }
-.toc-nav:hover .toc-track li:nth-child(7) a { transition-delay: 0.14s; }
-.toc-nav:hover .toc-track li:nth-child(8) a { transition-delay: 0.16s; }
-.toc-nav:hover .toc-track li:nth-child(9) a { transition-delay: 0.18s; }
-.toc-nav:hover .toc-track li:nth-child(10) a { transition-delay: 0.20s; }
-.toc-nav:hover .toc-track li:nth-child(11) a { transition-delay: 0.22s; }
-.toc-nav:hover .toc-track li:nth-child(12) a { transition-delay: 0.24s; }
 
 .toc-track a:hover,
 .toc-track a.active {
     color: var(--accent-brick);
-    border-bottom-color: var(--accent-brick);
 }
 
 /* === FORMULA TABLE === */
