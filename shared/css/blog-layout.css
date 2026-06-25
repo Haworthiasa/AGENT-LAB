@@ -196,6 +196,8 @@
     transform: translateX(-50%);
     padding: 1.25rem 1.5rem;
     box-sizing: border-box;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
 }
 
 @media (max-width: 740px) {
