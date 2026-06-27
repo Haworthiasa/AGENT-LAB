@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hành trình tiến hóa GPT: GPT-1 đến GPT-4o</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="../../shared/css/blog-anthropic.css">
+    <link rel="stylesheet" href="../../shared/css/blog-layout.css">
+
+    <style>
+        /* News-style table: only horizontal lines, bold text */
+        .news-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            font-size: 0.95rem;
+        }
+
+        .news-table thead {
+            border-bottom: 2px solid var(--text-charcoal);
+        }
+
+        .news-table thead th {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-charcoal);
+            padding: 0.75rem 0.6rem;
+            text-align: left;
+            vertical-align: bottom;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .news-table tbody tr {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .news-table tbody tr:last-child {
+            border-bottom: 2px solid var(--text-charcoal);
+        }
+
+        .news-table tbody td {
+            padding: 0.85rem 0.6rem;
+            font-weight: 500;
+            color: var(--text-charcoal);
+            vertical-align: top;
+            line-height: 1.55;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .news-table tbody td strong {
+            font-weight: 700;
+        }
+
+        .news-table colgroup col.col-label {
+            width: auto;
+        }
+
+        .news-table-wrapper {
+            width: min(960px, 95vw);
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0 1.5rem;
+            box-sizing: border-box;
+            overflow-x: auto;
+            margin: 2rem 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .news-table-wrapper .news-table {
+            width: 100%;
+            min-width: 0;
+            margin: 0;
+            table-layout: auto;
+        }
+
+        /* Two-column ref table */
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            font-size: 0.95rem;
+        }
+
+        .ref-table thead {
+            border-bottom: 2px solid var(--text-charcoal);
+        }
+
+        .ref-table thead th {
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-charcoal);
+            padding: 0.75rem 0.6rem;
+            text-align: left;
+        }
+
+        .ref-table tbody tr {
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .ref-table tbody tr:last-child {
+            border-bottom: 2px solid var(--text-charcoal);
+        }
+
+        .ref-table tbody td {
+            padding: 0.75rem 0.6rem;
+            font-weight: 500;
+            vertical-align: top;
+            line-height: 1.55;
+        }
+
+        .ref-table tbody td:first-child {
+            white-space: nowrap;
+        }
+
+        /* 7-column feature table special handling */
+        .feature-table tbody td:first-child {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <nav class="toc-nav" aria-label="Mục lục">
+        <button class="toc-toggle" aria-label="Mở mục lục" aria-expanded="false">
+            <div class="hamburger">
+                <span></span><span></span><span></span>
+            </div>
+        </button>
+        <div class="toc-panel">
+            <span class="toc-title">MỤC LỤC</span>
+            <div class="toc-track">
+                <ul>
+                    <li><a href="#tom-tat">1. Tóm tắt</a></li>
+                    <li><a href="#lich-su">2. Lịch sử</a></li>
+                    <li><a href="#model-size">3. Model size</a></li>
+                    <li><a href="#training-data">4. Training data</a></li>
+                    <li><a href="#kien-truc">5. Kiến trúc</a></li>
+                    <li><a href="#performance">6. Performance</a></li>
+                    <li><a href="#ket-luan">7. Kết luận</a></li>
+                    <li><a href="#nguon-tham-khao">8. Nguồn tham khảo</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="blog-container">
+        <header class="blog-header">
+            <h1>GPT Overview: GPT-1 đến GPT-4o</h1>
+            <div class="blog-meta">GPT Evolution · 28 June 2026</div>
+        </header>
+
+        <article class="blog-content">
+
+            <!-- SECTION 1: Tóm tắt -->
+            <h1 id="tom-tat">1. Tóm tắt</h1>
+
+            <ul>
+                <li>GPT tiến hóa theo 5 trục chính: <strong>pre-training</strong>, <strong>scaling</strong>, <strong>in-context learning</strong>, <strong>alignment/RLHF</strong>, <strong>multimodal/omni interaction</strong>.</li>
+                <li>GPT-1, GPT-2, GPT-3 có thông số công khai trong paper gốc.</li>
+                <li>Từ GPT-3.5 trở đi, nhiều chi tiết nội bộ như số tham số, số layer, dữ liệu huấn luyện đầy đủ <strong>không được OpenAI công bố chính thức</strong>.</li>
+            </ul>
+
+            <table class="news-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Năm</th>
+                        <th>Ý tưởng cốt lõi</th>
+                        <th>Điểm cần nhớ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>GPT-1</td>
+                        <td>2018</td>
+                        <td>Pre-train rồi fine-tune</td>
+                        <td>Chứng minh transfer learning hiệu quả cho NLP</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-2</td>
+                        <td>2019</td>
+                        <td>Scale lên 1.5B, zero-shot</td>
+                        <td>Một LM lớn có thể làm nhiều tác vụ qua prompt</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-3</td>
+                        <td>2020</td>
+                        <td>175B, few-shot/in-context learning</td>
+                        <td>Làm tác vụ mới từ vài ví dụ trong prompt</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-3.5</td>
+                        <td>2022</td>
+                        <td>Instruction tuning + RLHF</td>
+                        <td>Nền tảng cho ChatGPT, tối ưu làm theo ý người dùng</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4</td>
+                        <td>2023</td>
+                        <td>Multimodal, reasoning mạnh hơn</td>
+                        <td>Nhận text + ảnh, đạt điểm cao trên nhiều benchmark</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4o</td>
+                        <td>2024</td>
+                        <td>Omni multimodal</td>
+                        <td>Text, vision, audio trong một mô hình end-to-end</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <figure>
+                <img src="assets/tree.png" alt="Cây phả hệ GPT">
+                <figcaption>Cây phả hệ GPT: từ GPT-1 đến GPT-4o — mỗi thế hệ mở rộng về quy mô, khả năng học và phương thức tương tác.</figcaption>
+            </figure>
+
+            <hr>
+
+            <!-- SECTION 2: Lịch sử -->
+            <h1 id="lich-su">2. Lịch sử</h1>
+
+            <ul>
+                <li>GPT-1 đặt nền móng cho hướng <strong>generative pre-training</strong>: học từ văn bản thô trước, sau đó fine-tune cho từng tác vụ.</li>
+                <li>GPT-2 cho thấy khi scale đủ lớn, mô hình bắt đầu làm được nhiều tác vụ ở chế độ <strong>zero-shot</strong>.</li>
+                <li>GPT-3 mở rộng hiện tượng này thành <strong>few-shot / in-context learning</strong>.</li>
+                <li>GPT-3.5 biến GPT thành trợ lý hội thoại nhờ <strong>instruction tuning + RLHF</strong>.</li>
+                <li>GPT-4 mở rộng GPT sang <strong>đa phương thức text + image</strong>.</li>
+                <li>GPT-4o hợp nhất <strong>text, vision, audio</strong> trong một mô hình omni end-to-end.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/timeline_chart.png" alt="Timeline GPT">
+                <figcaption>Dòng thời gian tiến hóa GPT: từ GPT-1 đến GPT-4o.</figcaption>
+            </figure>
+
+            <h2>Bảng tổng quan tính năng cốt lõi qua từng thế hệ</h2>
+
+            <div class="news-table-wrapper">
+                <table class="news-table feature-table">
+                    <thead>
+                        <tr>
+                            <th>Tính năng</th>
+                            <th>GPT-1</th>
+                            <th>GPT-2</th>
+                            <th>GPT-3</th>
+                            <th>GPT-3.5</th>
+                            <th>GPT-4</th>
+                            <th>GPT-4o</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Năm</td>
+                            <td>2018</td>
+                            <td>2019</td>
+                            <td>2020</td>
+                            <td>2022</td>
+                            <td>2023</td>
+                            <td>2024</td>
+                        </tr>
+                        <tr>
+                            <td>Kiến trúc</td>
+                            <td>Decoder-only Transformer</td>
+                            <td>Decoder-only Transformer</td>
+                            <td>Decoder-only Transformer</td>
+                            <td>Decoder-only Transformer + RLHF</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                        </tr>
+                        <tr>
+                            <td>Phương pháp học nổi bật</td>
+                            <td>Pre-train + fine-tune</td>
+                            <td>Zero-shot</td>
+                            <td>Few-shot / in-context learning</td>
+                            <td>SFT + RLHF</td>
+                            <td>RLHF + multimodal input</td>
+                            <td>End-to-end text, vision, audio</td>
+                        </tr>
+                        <tr>
+                            <td>Context window</td>
+                            <td>512</td>
+                            <td>1,024</td>
+                            <td>2,048</td>
+                            <td>Tùy phiên bản</td>
+                            <td>Tùy phiên bản</td>
+                            <td>Tùy phiên bản</td>
+                        </tr>
+                        <tr>
+                            <td>Đầu vào</td>
+                            <td>Text</td>
+                            <td>Text</td>
+                            <td>Text</td>
+                            <td>Text</td>
+                            <td>Text + image</td>
+                            <td>Text + audio + image + video input</td>
+                        </tr>
+                        <tr>
+                            <td>Đầu ra</td>
+                            <td>Text / task label</td>
+                            <td>Text</td>
+                            <td>Text</td>
+                            <td>Text hội thoại</td>
+                            <td>Text</td>
+                            <td>Text + audio + image tùy sản phẩm</td>
+                        </tr>
+                        <tr>
+                            <td>Bước nhảy chính</td>
+                            <td>Transfer learning</td>
+                            <td>Scaling</td>
+                            <td>In-context learning</td>
+                            <td>Alignment</td>
+                            <td>Multimodal reasoning</td>
+                            <td>Real-time omni interaction</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <hr>
+
+            <!-- SECTION 3: Model size -->
+            <h1 id="model-size">3. Model size</h1>
+
+            <h2>Scaling laws</h2>
+
+            <ul>
+                <li><strong>Scaling laws</strong> mô tả xu hướng: khi tăng số tham số, dữ liệu và compute huấn luyện, loss/hiệu năng thường cải thiện theo quy luật có thể dự đoán.</li>
+                <li>GPT-1 → GPT-3 là giai đoạn scale rất rõ:
+                    <ul>
+                        <li>GPT-1: 117M tham số.</li>
+                        <li>GPT-2: 1.5B tham số ở bản lớn nhất.</li>
+                        <li>GPT-3: 175B tham số.</li>
+                    </ul>
+                </li>
+                <li>Sau GPT-3, thông số nội bộ không còn được công bố đầy đủ.</li>
+                <li>Vì vậy, không nên trình bày các con số như số tham số GPT-4 hoặc GPT-4o nếu không có nguồn chính thức.</li>
+            </ul>
+
+            <h2>Bảng so sánh tham số</h2>
+
+            <div class="news-table-wrapper">
+                <table class="news-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Năm</th>
+                            <th>Số tham số</th>
+                            <th>Số layer</th>
+                            <th>Hidden size</th>
+                            <th>Attention heads</th>
+                            <th>Tăng trưởng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>GPT-1</td>
+                            <td>2018</td>
+                            <td>117M</td>
+                            <td>12</td>
+                            <td>768</td>
+                            <td>12</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-2 XL</td>
+                            <td>2019</td>
+                            <td>1.5B</td>
+                            <td>48</td>
+                            <td>1,600</td>
+                            <td>25</td>
+                            <td>&times;12.8</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3</td>
+                            <td>2020</td>
+                            <td>175B</td>
+                            <td>96</td>
+                            <td>12,288</td>
+                            <td>96</td>
+                            <td>&times;117</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3.5</td>
+                            <td>2022</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4</td>
+                            <td>2023</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4o</td>
+                            <td>2024</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <figure>
+                <img src="assets/bubble_chart.png" alt="Bubble chart GPT scale">
+                <figcaption>Trực quan hóa quy mô tham số GPT qua các thế hệ — độ lớn bubble thể hiện mức tăng trưởng số tham số.</figcaption>
+            </figure>
+
+            <h2>Quy luật Chinchilla</h2>
+
+            <ul>
+                <li>Quy luật Chinchilla nhấn mạnh: <strong>không chỉ tăng tham số</strong>, mà phải cân bằng giữa:
+                    <ul>
+                        <li>kích thước mô hình,</li>
+                        <li>số token huấn luyện,</li>
+                        <li>ngân sách compute.</li>
+                    </ul>
+                </li>
+                <li>Với cùng compute, một model nhỏ hơn nhưng được huấn luyện trên nhiều token hơn có thể hiệu quả hơn model rất lớn nhưng thiếu dữ liệu.</li>
+                <li>Ý nghĩa với GPT:
+                    <ul>
+                        <li>GPT-1 → GPT-3: tăng mạnh về quy mô tham số.</li>
+                        <li>Sau GPT-3: xu hướng chuyển sang dữ liệu chất lượng hơn, alignment tốt hơn, tối ưu compute tốt hơn.</li>
+                    </ul>
+                </li>
+                <li>Kết luận: <em>"model mạnh hơn" không còn đồng nghĩa đơn giản với "nhiều tham số hơn"</em>.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 4: Training data -->
+            <h1 id="training-data">4. Training data</h1>
+
+            <h2>Bảng so sánh token và nội dung dữ liệu huấn luyện</h2>
+
+            <div class="news-table-wrapper">
+                <table class="news-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Token</th>
+                            <th>Nội dung dữ liệu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>GPT-1</td>
+                            <td>Không công bố</td>
+                            <td>BookCorpus gồm hơn 7,000 sách chưa xuất bản thuộc nhiều thể loại; dữ liệu có các đoạn văn bản dài, liên tục, phù hợp để học phụ thuộc ngữ cảnh xa.</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-2</td>
+                            <td>Không công bố</td>
+                            <td>WebText gồm văn bản trích từ các liên kết Reddit có ít nhất 3 karma; bản dùng trong paper có hơn 8 triệu tài liệu, khoảng 40GB văn bản sau khử trùng lặp và lọc heuristic; Wikipedia bị loại khỏi WebText.</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3</td>
+                            <td>300B token huấn luyện</td>
+                            <td>Hỗn hợp dữ liệu gồm filtered Common Crawl, WebText2, Books1, Books2 và Wikipedia; dữ liệu được lấy mẫu theo trọng số thay vì theo đúng kích thước gốc của từng nguồn.</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3.5</td>
+                            <td>Không công bố</td>
+                            <td>Không có mô tả đầy đủ về pre-training dataset; phần alignment liên quan đến instruction tuning/RLHF dùng prompt do labeler viết, prompt từ API, demonstration của labeler và ranking giữa các output mô hình.</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4</td>
+                            <td>Không công bố</td>
+                            <td>GPT-4 base được huấn luyện để dự đoán token tiếp theo trên dữ liệu công khai và dữ liệu được cấp phép; sau đó được fine-tune bằng RLHF. OpenAI không công bố chi tiết dataset construction.</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4o</td>
+                            <td>Không công bố</td>
+                            <td>Dữ liệu pre-training đến khoảng 10/2023; gồm dữ liệu công khai được chọn lọc, dữ liệu từ partnership, web data, code/math và dữ liệu đa phương thức như image, audio, video.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Chi tiết input / output qua từng thế hệ</h2>
+
+            <div class="news-table-wrapper">
+                <table class="news-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Input</th>
+                            <th>Output</th>
+                            <th>Điểm mới</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>GPT-1</td>
+                            <td>Text</td>
+                            <td>Text / nhãn tác vụ</td>
+                            <td>Cần biến đổi input theo từng task</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-2</td>
+                            <td>Text prompt</td>
+                            <td>Text continuation</td>
+                            <td>Prompt bắt đầu thay thế fine-tune trong một số tác vụ</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3</td>
+                            <td>Text prompt + ví dụ</td>
+                            <td>Text answer</td>
+                            <td>Few-shot learning trong prompt</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3.5</td>
+                            <td>Instruction / dialogue</td>
+                            <td>Conversational answer</td>
+                            <td>Hội thoại nhiều lượt, làm theo hướng dẫn tốt hơn</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4</td>
+                            <td>Text + image</td>
+                            <td>Text</td>
+                            <td>Phân tích ảnh, suy luận đa phương thức</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4o</td>
+                            <td>Text + audio + image + video input</td>
+                            <td>Text + audio + image tùy sản phẩm</td>
+                            <td>Omni model, xử lý nhiều modality trong cùng mạng Neural Network</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Các cải thiện trong data training</h2>
+
+            <ul>
+                <li><strong>Từ sách sang web-scale text:</strong> GPT-1 dùng BookCorpus; GPT-2 mở rộng sang WebText; GPT-3 dùng hỗn hợp dữ liệu web-scale lớn hơn.</li>
+                <li><strong>Từ pre-training sang alignment data:</strong> GPT-3.5/ChatGPT nhấn mạnh instruction data, demonstration của con người, ranking giữa các câu trả lời và RLHF.</li>
+                <li><strong>Từ text-only sang multimodal:</strong> GPT-4 mở rộng sang text + image; GPT-4o mở rộng mạnh hơn sang text, vision và audio trong một mô hình end-to-end.</li>
+                <li><strong>Từ dữ liệu nhiều hơn sang dữ liệu tốt hơn:</strong> Sau GPT-3, trọng tâm không chỉ là scale dữ liệu mà còn là lọc dữ liệu, dữ liệu hướng dẫn, preference data, safety data và đánh giá sau huấn luyện.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 5: Kiến trúc -->
+            <h1 id="kien-truc">5. Kiến trúc</h1>
+
+            <h2>Bảng chi tiết kiến trúc</h2>
+
+            <div class="news-table-wrapper">
+                <table class="news-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Layers</th>
+                            <th>Hidden size</th>
+                            <th>Attention heads</th>
+                            <th>Context</th>
+                            <th>Kiến trúc / hệ thống</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>GPT-1</td>
+                            <td>12</td>
+                            <td>768</td>
+                            <td>12</td>
+                            <td>512</td>
+                            <td>Decoder-only Transformer</td>
+                            <td>Công khai trong paper GPT-1</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-2</td>
+                            <td>48</td>
+                            <td>1,600</td>
+                            <td>25</td>
+                            <td>1,024</td>
+                            <td>Decoder-only Transformer</td>
+                            <td>Scale lớn hơn GPT-1</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3</td>
+                            <td>96</td>
+                            <td>12,288</td>
+                            <td>96</td>
+                            <td>2,048</td>
+                            <td>Decoder-only Transformer</td>
+                            <td>Dùng dense + sparse attention patterns</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-3.5</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Tùy phiên bản</td>
+                            <td>Decoder-only Transformer + instruction tuning/RLHF</td>
+                            <td>Không nên suy đoán layer/hidden size</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Tùy phiên bản</td>
+                            <td>Không công bố</td>
+                            <td>OpenAI không công bố chi tiết kiến trúc</td>
+                        </tr>
+                        <tr>
+                            <td>GPT-4o</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Không công bố</td>
+                            <td>Tùy phiên bản</td>
+                            <td>Không công bố</td>
+                            <td>End-to-end text, vision, audio</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Các cải thiện kiến trúc qua từng model</h2>
+
+            <table class="news-table">
+                <thead>
+                    <tr>
+                        <th>Chuyển tiếp</th>
+                        <th>Cải thiện chính</th>
+                        <th>Ý nghĩa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>GPT-1 → GPT-2</td>
+                        <td>Scale số tham số, context dài hơn, WebText lớn hơn</td>
+                        <td>Tăng khả năng sinh văn bản mạch lạc và zero-shot</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-2 → GPT-3</td>
+                        <td>Scale lên 175B, tăng depth/width</td>
+                        <td>Kích hoạt few-shot và in-context learning mạnh hơn</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-3 → GPT-3.5</td>
+                        <td>Thêm instruction tuning + RLHF</td>
+                        <td>Model không chỉ "biết", mà còn trả lời đúng ý người dùng hơn</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-3.5 → GPT-4</td>
+                        <td>Thêm multimodal input và reasoning mạnh hơn</td>
+                        <td>Xử lý ảnh, bài thi chuyên môn, tác vụ nhiều bước</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4 → GPT-4o</td>
+                        <td>Hợp nhất text, vision, audio trong mô hình omni</td>
+                        <td>Tương tác tự nhiên hơn, đặc biệt với giọng nói và hình ảnh</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <hr>
+
+            <!-- SECTION 6: Performance -->
+            <h1 id="performance">6. Performance</h1>
+
+            <h2>GPT Benchmark Timeline</h2>
+
+            <h3>2018 — GPT-1: NLP task performance</h3>
+            <ul>
+                <li>GPT-1 được đánh giá trên các tác vụ NLP truyền thống như natural language inference, question answering, semantic similarity và text classification.</li>
+                <li>Mô hình pre-train sau đó fine-tune có thể vượt nhiều mô hình task-specific trước đó.</li>
+            </ul>
+
+            <h3>2019 — GPT-2: Zero-shot language modeling</h3>
+            <ul>
+                <li>GPT-2 chuyển trọng tâm từ fine-tuning sang zero-shot.</li>
+                <li>GPT-2 lớn nhất đạt state-of-the-art trên <strong>7/8 language modeling datasets</strong> trong thiết lập zero-shot.</li>
+            </ul>
+
+            <h3>2020 — GPT-3: Few-shot generalization</h3>
+            <ul>
+                <li>GPT-3 mở rộng performance sang few-shot / in-context learning.</li>
+                <li>Mô hình có thể làm nhiều tác vụ mới chỉ từ vài ví dụ trong prompt, không cần cập nhật trọng số.</li>
+            </ul>
+
+            <h3>2022 — GPT-3.5: Instruction-following assistant</h3>
+            <ul>
+                <li>GPT-3.5 cải thiện khả năng làm theo hướng dẫn và hội thoại thực tế.</li>
+                <li>Khả năng trả lời hữu ích, đúng ý người dùng và duy trì hội thoại nhiều lượt tốt.</li>
+            </ul>
+
+            <h3>2023 — GPT-4: General reasoning + coding</h3>
+            <ul>
+                <li>GPT-4 tạo bước nhảy lớn trên các benchmark kiến thức, suy luận và lập trình.</li>
+            </ul>
+
+            <figure>
+                <img src="assets/gpt-4_vs_gpt-3.png" alt="GPT-4 so với GPT-3">
+                <figcaption>GPT-4 vượt trội GPT-3 trên các bài kiểm tra chuyên môn: Uniform Bar Exam (90th → 10th percentile), Biology Olympiad (99th → 31st), GRE Quantitative (80th → 25th), cùng nhiều kỳ thi khác.</figcaption>
+            </figure>
+
+            <h3>2024 — GPT-4o: Omni multimodal performance</h3>
+            <ul>
+                <li>GPT-4o mở rộng performance sang tương tác đa phương thức thời gian thực.</li>
+                <li>Điểm nhấn performance: đạt mức GPT-4 Turbo trên text, reasoning và coding, đồng thời cải thiện ở vision/audio; audio response thấp nhất khoảng <strong>232 ms</strong>, trung bình khoảng <strong>320 ms</strong>.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 7: Kết luận -->
+            <h1 id="ket-luan">7. Kết luận</h1>
+
+            <ul>
+                <li>GPT phát triển theo một đường tiến hóa rõ ràng:
+                    <ul>
+                        <li><strong>pre-training → scaling → in-context learning → alignment → multimodal/omni interaction</strong>.</li>
+                    </ul>
+                </li>
+                <li>GPT-1 đến GPT-3 là giai đoạn chứng minh sức mạnh của <strong>Transformer + scale</strong>.</li>
+                <li>GPT-3.5 là bước ngoặt sản phẩm: GPT trở thành <strong>trợ lý hội thoại đại chúng</strong>.</li>
+                <li>GPT-4 mở rộng GPT từ text-only sang <strong>text + image</strong>.</li>
+                <li>GPT-4o đẩy GPT sang mô hình <strong>omni</strong>, xử lý text, vision và audio end-to-end.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 8: Nguồn tham khảo -->
+            <h1 id="nguon-tham-khao">8. Nguồn tham khảo</h1>
+
+            <h2>Nguồn chính</h2>
+
+            <table class="ref-table">
+                <thead>
+                    <tr>
+                        <th>Nguồn</th>
+                        <th>Link</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Transformer</td>
+                        <td><a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-1</td>
+                        <td><a href="https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf">Improving Language Understanding by Generative Pre-Training</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-2</td>
+                        <td><a href="https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf">Language Models are Unsupervised Multitask Learners</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-3</td>
+                        <td><a href="https://arxiv.org/abs/2005.14165">Language Models are Few-Shot Learners</a></td>
+                    </tr>
+                    <tr>
+                        <td>InstructGPT / RLHF</td>
+                        <td><a href="https://arxiv.org/abs/2203.02155">Training language models to follow instructions with human feedback</a></td>
+                    </tr>
+                    <tr>
+                        <td>ChatGPT / GPT-3.5</td>
+                        <td><a href="https://openai.com/index/chatgpt/">Introducing ChatGPT</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4</td>
+                        <td><a href="https://arxiv.org/abs/2303.08774">GPT-4 Technical Report</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4 research page</td>
+                        <td><a href="https://openai.com/index/gpt-4-research/">GPT-4</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4o</td>
+                        <td><a href="https://openai.com/index/hello-gpt-4o/">Hello GPT-4o</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4o System Card</td>
+                        <td><a href="https://openai.com/index/gpt-4o-system-card/">GPT-4o System Card</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4o mini</td>
+                        <td><a href="https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/">GPT-4o mini: advancing cost-efficient intelligence</a></td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI o1-preview / o1-mini</td>
+                        <td><a href="https://openai.com/index/introducing-openai-o1-preview/">Introducing OpenAI o1-preview</a></td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI o3-mini</td>
+                        <td><a href="https://openai.com/index/openai-o3-mini/">OpenAI o3-mini</a></td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI o3 and o4-mini</td>
+                        <td><a href="https://openai.com/index/introducing-o3-and-o4-mini/">Introducing OpenAI o3 and o4-mini</a></td>
+                    </tr>
+                    <tr>
+                        <td>o3 and o4-mini System Card</td>
+                        <td><a href="https://cdn.openai.com/pdf/2221c875-02dc-4789-800b-e7758f3722c1/o3-and-o4-mini-system-card.pdf">o3 and o4-mini System Card</a></td>
+                    </tr>
+                    <tr>
+                        <td>Scaling Laws</td>
+                        <td><a href="https://arxiv.org/abs/2001.08361">Scaling Laws for Neural Language Models</a></td>
+                    </tr>
+                    <tr>
+                        <td>Chinchilla</td>
+                        <td><a href="https://arxiv.org/abs/2203.15556">Training Compute-Optimal Large Language Models</a></td>
+                    </tr>
+                    <tr>
+                        <td>Switch Transformer</td>
+                        <td><a href="https://arxiv.org/abs/2101.03961">Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity</a></td>
+                    </tr>
+                    <tr>
+                        <td>Sparsely-Gated MoE</td>
+                        <td><a href="https://arxiv.org/abs/1701.06538">Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer</a></td>
+                    </tr>
+                    <tr>
+                        <td>Human Preferences</td>
+                        <td><a href="https://arxiv.org/abs/1706.03741">Deep Reinforcement Learning from Human Preferences</a></td>
+                    </tr>
+                    <tr>
+                        <td>Summarization with Human Feedback</td>
+                        <td><a href="https://arxiv.org/abs/2009.01325">Learning to Summarize with Human Feedback</a></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Mã nguồn và công cụ</h2>
+
+            <table class="ref-table">
+                <thead>
+                    <tr>
+                        <th>Mã nguồn</th>
+                        <th>Link</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>GPT-1 repository</td>
+                        <td><a href="https://github.com/openai/finetune-transformer-lm">openai/finetune-transformer-lm</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-2 repository</td>
+                        <td><a href="https://github.com/openai/gpt-2">openai/gpt-2</a></td>
+                    </tr>
+                    <tr>
+                        <td>GPT-3 repository</td>
+                        <td><a href="https://github.com/openai/gpt-3">openai/gpt-3</a></td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI Evals</td>
+                        <td><a href="https://github.com/openai/evals">openai/evals</a></td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI Cookbook</td>
+                        <td><a href="https://github.com/openai/openai-cookbook">openai/openai-cookbook</a></td>
+                    </tr>
+                    <tr>
+                        <td>Simple Evals</td>
+                        <td><a href="https://github.com/openai/simple-evals">openai/simple-evals</a></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Nguồn phân tích bổ sung</h2>
+
+            <table class="ref-table">
+                <thead>
+                    <tr>
+                        <th>Nguồn</th>
+                        <th>Link</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SemiAnalysis</td>
+                        <td><a href="https://www.semianalysis.com/">GPT-4 Architecture, Infrastructure, Training Dataset, Costs, Vision, MoE</a></td>
+                    </tr>
+                    <tr>
+                        <td>Epoch AI</td>
+                        <td><a href="https://epochai.org/data/notable-ai-models">Parameter, Compute and Data Trends in Machine Learning</a></td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </article>
+    </div>
+
+    <script>
+        (function() {
+            var nav = document.querySelector('.toc-nav');
+            var toggle = nav.querySelector('.toc-toggle');
+            var panel = nav.querySelector('.toc-panel');
+
+            function openNav() {
+                nav.classList.add('open');
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.setAttribute('aria-label', 'Đóng mục lục');
+            }
+
+            function closeNav() {
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute('aria-label', 'Mở mục lục');
+            }
+
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (nav.classList.contains('open')) {
+                    closeNav();
+                } else {
+                    openNav();
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && nav.classList.contains('open')) {
+                    closeNav();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (nav.classList.contains('open') && !nav.contains(e.target)) {
+                    closeNav();
+                }
+            });
+
+            var headings = document.querySelectorAll('.blog-content h1[id]');
+            var links = document.querySelectorAll('.toc-track a[href^="#"]');
+            if (headings.length && links.length) {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            links.forEach(function(link) { link.classList.remove('active'); });
+                            var activeLink = document.querySelector('.toc-track a[href="#' + entry.target.id + '"]');
+                            if (activeLink) activeLink.classList.add('active');
+                        }
+                    });
+                }, {
+                    rootMargin: '-20% 0px -60% 0px',
+                    threshold: 0
+                });
+                headings.forEach(function(h) { observer.observe(h); });
+            }
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script>
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    </script>
+</body>
+</html>
