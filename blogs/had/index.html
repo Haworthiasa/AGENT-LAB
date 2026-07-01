@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAD: Hallucination-Aware Diffusion Priors for 3D Reconstruction</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="../../shared/css/blog-anthropic.css">
+    <link rel="stylesheet" href="../../shared/css/blog-layout.css">
+</head>
+<body>
+    <nav class="toc-nav" aria-label="Mục lục">
+        <button class="toc-toggle" aria-label="Mở mục lục" aria-expanded="false">
+            <div class="hamburger">
+                <span></span><span></span><span></span>
+            </div>
+        </button>
+        <div class="toc-panel">
+            <span class="toc-title">MỤC LỤC</span>
+            <div class="toc-track">
+                <ul>
+                    <li><a href="#tom-tat">1. Tóm tắt</a></li>
+                    <li><a href="#bai-toan">2. Bài toán</a></li>
+                    <li><a href="#methodology">3. Methodology</a></li>
+                    <li><a href="#ket-qua">4. Kết quả</a></li>
+                    <li><a href="#han-che">5. Hạn chế</a></li>
+                    <li><a href="#ket-luan">6. Kết luận</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="blog-container">
+        <header class="blog-header">
+            <h1>HAD: Hallucination-Aware Diffusion Priors for 3D Reconstruction</h1>
+            <div class="blog-meta">HAD · 30 June 2026</div>
+        </header>
+
+        <article class="blog-content">
+            <!-- SECTION 1: Tóm tắt -->
+            <h1 id="tom-tat">1. Tóm tắt</h1>
+
+            <h3>Bối cảnh</h3>
+            <ul>
+                <li><strong>3DGS cần nhiều ảnh đầu vào:</strong> Nếu chỉ có ít ảnh, 3DGS thường render ảnh góc nhìn mới bị mờ, méo hình, thiếu chi tiết hoặc sinh floaters.</li>
+                <li><strong>Diffusion giúp sửa ảnh render:</strong> Các hướng như Difix3D dùng diffusion để sửa ảnh render lỗi từ 3DGS, rồi dùng ảnh đã sửa làm ảnh bổ sung để train lại 3DGS.</li>
+                <li><strong>Vấn đề lớn:</strong> Diffusion có thể tạo ra <strong>chi tiết bịa</strong> — tức chi tiết nhìn hợp lý nhưng không tồn tại hoặc không khớp với các ảnh đầu vào.</li>
+            </ul>
+
+            <h3>Giải pháp cốt lõi</h3>
+            <ul>
+                <li><strong>HAD không cố làm diffusion hết bịa hoàn toàn.</strong></li>
+                <li>Thay vào đó, HAD học một mạng để dự đoán <strong>điểm bịa ảnh</strong> cho từng pixel.</li>
+                <li>Pixel nào có điểm bịa cao sẽ bị loại khỏi loss khi train 3DGS.</li>
+                <li>Nhờ đó, 3DGS vẫn nhận được lợi ích từ ảnh diffusion, nhưng tránh học theo các pixel sai.</li>
+            </ul>
+
+            <h3>Ý tưởng một câu</h3>
+            <ul>
+                <li><strong>HAD = 3DGS + bộ sửa ảnh diffusion + bộ chấm điểm bịa ảnh.</strong></li>
+                <li>Diffusion tạo ảnh bổ sung.</li>
+                <li>Bộ chấm điểm bịa ảnh kiểm tra pixel nào đáng tin.</li>
+                <li>3DGS chỉ học từ phần đáng tin của ảnh bổ sung.</li>
+            </ul>
+
+            <p>Nguồn chính: paper HAD và project page của tác giả. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</p>
+
+            <hr>
+
+            <!-- SECTION 2: Bài toán -->
+            <h1 id="bai-toan">2. Bài toán</h1>
+
+            <h3>Đầu vào</h3>
+            <p>Ta có một tập ảnh đầu vào đã biết camera:</p>
+
+            $$
+            P = \{(I_n, C_n) \mid n \in \{0, \ldots, N\}\}
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$I_n$: ảnh RGB thứ $n$.</li>
+                <li>$C_n$: camera của ảnh thứ $n$.</li>
+                <li>$P$: toàn bộ ảnh đầu vào.</li>
+            </ul>
+
+            <h3>Mục tiêu</h3>
+            <ul>
+                <li>Train một mô hình 3DGS $\Phi$.</li>
+                <li>Mô hình này cần render tốt:
+                    <ul>
+                        <li>tại các camera đã có ảnh đầu vào;</li>
+                        <li>tại các camera mới chưa thấy trong lúc train.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>Khó khăn</h3>
+            <ul>
+                <li>Khi số ảnh đầu vào ít, scene bị thiếu quan sát.</li>
+                <li>3DGS dễ học sai hình học hoặc thiếu vùng bị che khuất.</li>
+                <li>Diffusion có thể sửa ảnh render từ 3DGS, nhưng ảnh diffusion không luôn đúng.</li>
+                <li>Nếu dùng toàn bộ ảnh diffusion làm supervision, 3DGS có thể học luôn <strong>chi tiết bịa</strong>.</li>
+            </ul>
+
+            <h3>Cách HAD đặt lại bài toán</h3>
+            <p>Thay vì hỏi:</p>
+            <ul>
+                <li>"Làm sao để diffusion không bịa?"</li>
+            </ul>
+            <p>HAD hỏi:</p>
+            <ul>
+                <li>"Trong ảnh diffusion, pixel nào đáng tin, pixel nào có khả năng là chi tiết bịa?"</li>
+            </ul>
+            <p>Đây là điểm mới chính của paper: HAD biến hallucination thành một bài toán <strong>chấm điểm độ tin cậy theo từng pixel</strong>. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</p>
+
+            <hr>
+
+            <!-- SECTION 3: Methodology -->
+            <h1 id="methodology">3. Methodology</h1>
+
+            <h3>3.1. Bộ thuật ngữ thống nhất</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thuật ngữ trong paper</th>
+                        <th>Gọi thống nhất trong bài này</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>input views / training views</td>
+                        <td>ảnh đầu vào</td>
+                    </tr>
+                    <tr>
+                        <td>novel view</td>
+                        <td>ảnh góc nhìn mới</td>
+                    </tr>
+                    <tr>
+                        <td>augmented novel view</td>
+                        <td>ảnh bổ sung</td>
+                    </tr>
+                    <tr>
+                        <td>hallucination / aliens</td>
+                        <td>chi tiết bịa</td>
+                    </tr>
+                    <tr>
+                        <td>hallucination score</td>
+                        <td>điểm bịa ảnh</td>
+                    </tr>
+                    <tr>
+                        <td>hallucination mask</td>
+                        <td>mặt nạ bỏ pixel sai</td>
+                    </tr>
+                    <tr>
+                        <td>diffusion prior</td>
+                        <td>bộ sửa ảnh diffusion</td>
+                    </tr>
+                    <tr>
+                        <td>multi-view encoder</td>
+                        <td>bộ đọc nhiều ảnh</td>
+                    </tr>
+                    <tr>
+                        <td>3DGS rendering</td>
+                        <td>ảnh render từ 3DGS</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <hr>
+
+            <h3>3.2. Preliminary: 3D Gaussian Splatting</h3>
+
+            <h4>Biểu diễn scene</h4>
+            <p>3DGS biểu diễn scene bằng nhiều Gaussian 3D:</p>
+
+            $$
+            \{(\mu_i, S_i, R_i, \delta_i, c_i)\}_{i=1}^{N}
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$\mu_i$: tâm Gaussian.</li>
+                <li>$S_i$: kích thước Gaussian.</li>
+                <li>$R_i$: hướng xoay Gaussian.</li>
+                <li>$\delta_i$: độ đục học được.</li>
+                <li>$c_i$: màu của Gaussian.</li>
+            </ul>
+
+            <h4>Độ đục của Gaussian</h4>
+            <p>Paper viết:</p>
+
+            $$
+            \alpha_i
+            =
+            \delta_i
+            \exp
+            \left[
+            -\frac{1}{2}
+            (x-\mu_i)^\top
+            \Sigma_i^{-1}
+            (x-\mu_i)
+            \right]
+            $$
+
+            <p>với:</p>
+
+            $$
+            \Sigma_i = R_i S_i S_i^\top R_i^\top
+            $$
+
+            <p>Giải thích:</p>
+            <ul>
+                <li>$x$ là điểm đang xét.</li>
+                <li>$\mu_i$ là tâm Gaussian.</li>
+                <li>$x-\mu_i$ đo khoảng cách từ điểm $x$ tới tâm Gaussian.</li>
+                <li>$\Sigma_i$ mô tả hình dạng và hướng của Gaussian.</li>
+                <li>$\delta_i$ là độ đục tối đa.</li>
+                <li>$\alpha_i$ là độ đục thực tế tại điểm $x$.</li>
+            </ul>
+
+            <p>Trực giác:</p>
+            <ul>
+                <li>Điểm càng gần tâm Gaussian thì $\alpha_i$ càng lớn.</li>
+                <li>Điểm càng xa tâm Gaussian thì $\alpha_i$ càng nhỏ.</li>
+                <li>Mỗi Gaussian giống một "đám mây màu" trong không gian 3D.</li>
+            </ul>
+
+            <h4>Render màu pixel</h4>
+            <p>Paper dùng công thức trộn màu:</p>
+
+            $$
+            C(p)
+            =
+            \sum_{i=1}^{N}
+            c_i \alpha_i
+            \prod_{j=1}^{i-1}
+            (1-\alpha_j)
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$p$: pixel trên ảnh.</li>
+                <li>$C(p)$: màu cuối cùng của pixel $p$.</li>
+                <li>$c_i$: màu của Gaussian thứ $i$.</li>
+                <li>$\alpha_i$: độ đục của Gaussian thứ $i$.</li>
+                <li>$\prod_{j=1}^{i-1}(1-\alpha_j)$: phần ánh sáng còn lại sau khi đi qua các Gaussian phía trước.</li>
+            </ul>
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Gaussian phía trước che nhiều thì Gaussian phía sau đóng góp ít.</li>
+                <li>Gaussian phía trước trong suốt thì Gaussian phía sau vẫn nhìn thấy được.</li>
+                <li>Đây là cách 3DGS render ảnh từ tập Gaussian 3D.</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.3. Preliminary: bộ sinh ảnh góc nhìn mới trực tiếp</h3>
+
+            <p>Paper viết:</p>
+
+            $$
+            i_c = FFD(P \mid c)
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$P$: tập ảnh đầu vào.</li>
+                <li>$c$: camera của góc nhìn mới.</li>
+                <li>$i_c$: ảnh được sinh ra ở camera $c$.</li>
+                <li>$FFD$: mạng sinh ảnh góc nhìn mới trực tiếp.</li>
+            </ul>
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Cho mạng nhiều ảnh đầu vào.</li>
+                <li>Hỏi mạng: "Nếu camera ở vị trí $c$, ảnh sẽ trông như thế nào?"</li>
+                <li>LVSM là một mô hình thuộc nhóm này.</li>
+            </ul>
+
+            <p>Trong HAD:</p>
+            <ul>
+                <li>LVSM không phải module reconstruct chính.</li>
+                <li>Tác giả chỉ reuse phần <strong>bộ đọc nhiều ảnh</strong> của LVSM.</li>
+                <li>Mục đích là giúp mạng hiểu quan hệ giữa các ảnh đầu vào để kiểm tra ảnh diffusion có bịa hay không. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.4. Preliminary: diffusion dùng để sửa ảnh</h3>
+
+            <h4>Công thức thêm nhiễu</h4>
+            <p>Paper viết:</p>
+
+            $$
+            x_\tau
+            =
+            \alpha_\tau x
+            +
+            \sigma_\tau \epsilon,
+            \quad
+            \epsilon \sim \mathcal{N}(0, I)
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$x$: ảnh sạch.</li>
+                <li>$x_\tau$: ảnh sau khi thêm nhiễu ở bước $\tau$.</li>
+                <li>$\epsilon$: nhiễu Gaussian.</li>
+                <li>$\alpha_\tau$: lượng ảnh gốc còn giữ lại.</li>
+                <li>$\sigma_\tau$: lượng nhiễu được thêm vào.</li>
+                <li>$\tau$: bước diffusion.</li>
+            </ul>
+
+            <p>Trực giác:</p>
+            <ul>
+                <li>$\tau$ nhỏ: ảnh còn giống ảnh thật.</li>
+                <li>$\tau$ lớn: ảnh bị nhiễu nhiều.</li>
+                <li>Diffusion học quá trình ngược lại: từ ảnh nhiễu, sửa dần về ảnh sạch.</li>
+            </ul>
+
+            <h4>Công thức học dự đoán nhiễu</h4>
+            <p>Paper viết:</p>
+
+            $$
+            \mathbb{E}_{x \sim p_{data},\ \tau \sim p_\tau,\ \epsilon \sim \mathcal{N}(0,I)}
+            \left[
+            \left\|
+            \epsilon
+            -
+            \epsilon_\theta(x_\tau; c, \tau)
+            \right\|_2^2
+            \right]
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$\epsilon$: nhiễu thật.</li>
+                <li>$\epsilon_\theta(\cdot)$: mạng diffusion dự đoán nhiễu.</li>
+                <li>$c$: điều kiện đầu vào.</li>
+                <li>$x_\tau$: ảnh bị nhiễu.</li>
+                <li>$\tau$: bước diffusion.</li>
+            </ul>
+
+            <p>Trong HAD:</p>
+            <ul>
+                <li>Diffusion không được dùng để sinh ảnh từ text.</li>
+                <li>Diffusion được dùng như <strong>bộ sửa ảnh</strong>.</li>
+                <li>Đầu vào là ảnh render lỗi từ 3DGS.</li>
+                <li>Đầu ra là ảnh đã được sửa để dùng làm ảnh bổ sung.</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.5. Loss tổng của HAD</h3>
+
+            <p>HAD train 3DGS bằng hai nguồn supervision:</p>
+
+            $$
+            \arg \min_{\Phi}
+            \lambda_{input} L_{input}
+            +
+            \lambda_{novel} L_{novel}
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$\Phi$: tham số của 3DGS.</li>
+                <li>$L_{input}$: loss trên ảnh đầu vào thật.</li>
+                <li>$L_{novel}$: loss trên ảnh bổ sung.</li>
+                <li>$\lambda_{input}$: trọng số cho ảnh đầu vào.</li>
+                <li>$\lambda_{novel}$: trọng số cho ảnh bổ sung.</li>
+            </ul>
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Ảnh đầu vào là nguồn đáng tin nhất.</li>
+                <li>Ảnh bổ sung giúp tăng số góc nhìn để train.</li>
+                <li>Nhưng ảnh bổ sung có thể chứa chi tiết bịa, nên cần kiểm soát bằng mặt nạ.</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.6. Loss trên ảnh đầu vào</h3>
+
+            <p>Paper dùng:</p>
+
+            $$
+            L_{input}
+            =
+            0.8 L_1(R_\Phi(c), i)
+            +
+            0.2 L_{D\text{-}SSIM}(R_\Phi(c), i)
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$i$: ảnh đầu vào thật.</li>
+                <li>$c$: camera của ảnh đó.</li>
+                <li>$R_\Phi(c)$: ảnh 3DGS render tại camera $c$.</li>
+                <li>$L_1$: sai khác pixel.</li>
+                <li>$L_{D\text{-}SSIM}$: sai khác cấu trúc ảnh.</li>
+            </ul>
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Render từ 3DGS tại đúng camera của ảnh thật.</li>
+                <li>So sánh render với ảnh thật.</li>
+                <li>Đây là loss 3DGS bình thường, chưa phải điểm mới của HAD.</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.7. Loss trên ảnh bổ sung</h3>
+
+            <p>HAD tạo tập ảnh bổ sung:</p>
+
+            $$
+            \tilde{P}
+            =
+            \{(\tilde{I}_t, M_t, \tilde{C}_t)
+            \mid
+            t \in \{0, \ldots, T\}\}
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$\tilde{I}_t$: ảnh bổ sung.</li>
+                <li>$\tilde{C}_t$: camera của ảnh bổ sung.</li>
+                <li>$M_t$: mặt nạ bỏ pixel sai.</li>
+            </ul>
+
+            <p>Loss trên ảnh bổ sung:</p>
+
+            $$
+            L_{novel}
+            =
+            L_1
+            \left(
+            \neg m \odot R_\Phi(\tilde{c}),
+            \neg m \odot \tilde{i}
+            \right)
+            +
+            L_{D\text{-}SSIM}
+            \left(
+            \neg m \odot R_\Phi(\tilde{c}),
+            \neg m \odot \tilde{i}
+            \right)
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$\tilde{i}$: ảnh bổ sung.</li>
+                <li>$\tilde{c}$: camera của ảnh bổ sung.</li>
+                <li>$m$: mặt nạ bỏ pixel sai.</li>
+                <li>$\neg m$: phần pixel được giữ lại.</li>
+                <li>$\odot$: nhân từng pixel.</li>
+                <li>$R_\Phi(\tilde{c})$: ảnh 3DGS render tại camera mới.</li>
+            </ul>
+
+            <p>Cách hiểu:</p>
+            <ul>
+                <li>Nếu $m[p] = 1$, pixel $p$ bị xem là sai.</li>
+                <li>Khi đó $\neg m[p] = 0$, pixel này bị loại khỏi loss.</li>
+                <li>Nếu $m[p] = 0$, pixel $p$ được giữ lại.</li>
+                <li>Khi đó $\neg m[p] = 1$, pixel này được dùng để train 3DGS.</li>
+            </ul>
+
+            <p>Đây là công thức quan trọng nhất của HAD:</p>
+            <ul>
+                <li>HAD không cho 3DGS học toàn bộ ảnh diffusion.</li>
+                <li>HAD chỉ cho 3DGS học phần không bị đánh dấu là chi tiết bịa. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.8. Bộ sửa ảnh diffusion</h3>
+
+            <p>HAD reuse diffusion prior từ Difix3D.</p>
+
+            <p>Công thức:</p>
+
+            $$
+            \tilde{i}_G
+            =
+            G
+            \left(
+            R_\Phi(\tilde{c}) \mid i_{ref}
+            \right)
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$R_\Phi(\tilde{c})$: ảnh render từ 3DGS ở camera mới.</li>
+                <li>$i_{ref}$: ảnh đầu vào được chọn làm ảnh tham chiếu.</li>
+                <li>$G$: bộ sửa ảnh diffusion.</li>
+                <li>$\tilde{i}_G$: ảnh diffusion đã sửa.</li>
+            </ul>
+
+            <p>Quy trình:</p>
+            <ul>
+                <li>3DGS render một ảnh ở góc nhìn mới.</li>
+                <li>Ảnh này có thể bị lỗi vì số ảnh đầu vào ít.</li>
+                <li>Bộ sửa ảnh diffusion nhận ảnh render lỗi và một ảnh tham chiếu.</li>
+                <li>Nó sinh ra ảnh đã sửa.</li>
+                <li>Nhưng ảnh đã sửa có thể chứa chi tiết bịa. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.9. Bộ chấm điểm bịa ảnh</h3>
+
+            <p>HAD học một mạng chấm điểm bịa ảnh:</p>
+
+            $$
+            s
+            =
+            S_\theta
+            \left(
+            \tilde{i}_G
+            \mid
+            R_\Phi(\tilde{c}),
+            F_{\tilde{c}}
+            \right)
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$s$: điểm bịa ảnh theo từng pixel.</li>
+                <li>$S_\theta$: mạng chấm điểm bịa ảnh.</li>
+                <li>$\tilde{i}_G$: ảnh diffusion đã sửa.</li>
+                <li>$R_\Phi(\tilde{c})$: ảnh render gốc từ 3DGS.</li>
+                <li>$F_{\tilde{c}}$: đặc trưng nhiều ảnh tại camera mới.</li>
+            </ul>
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Mạng nhìn ảnh diffusion đã sửa.</li>
+                <li>Mạng nhìn thêm ảnh render gốc từ 3DGS.</li>
+                <li>Mạng dùng thông tin từ nhiều ảnh đầu vào.</li>
+                <li>Sau đó mạng dự đoán pixel nào có khả năng là chi tiết bịa.</li>
+            </ul>
+
+            <p>Kiến trúc gồm:</p>
+            <ul>
+                <li><strong>Bộ đọc nhiều ảnh:</strong> reuse từ LVSM, giữ cố định khi train.</li>
+                <li><strong>Nhánh chấm điểm:</strong> U-Net nhỏ 3 lớp, được train để dự đoán điểm bịa ảnh.</li>
+            </ul>
+
+            <p>Paper cho biết bộ chấm điểm này dùng pretrained LVSM encoder và một U-Net 3 lớp để dự đoán bản đồ điểm bịa ảnh. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</p>
+
+            <hr>
+
+            <h3>3.10. Bộ đọc nhiều ảnh</h3>
+
+            <p>Paper viết:</p>
+
+            $$
+            F_{\tilde{c}}
+            =
+            V(P \mid \tilde{c})
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$P$: tập ảnh đầu vào.</li>
+                <li>$\tilde{c}$: camera mới.</li>
+                <li>$V$: bộ đọc nhiều ảnh.</li>
+                <li>$F_{\tilde{c}}$: đặc trưng nhiều ảnh tại camera mới.</li>
+            </ul>
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Bộ đọc nhiều ảnh nhìn các ảnh đầu vào.</li>
+                <li>Nó gom thông tin cần thiết cho camera mới.</li>
+                <li>Thông tin này giúp mạng biết ảnh diffusion có khớp với scene thật hay không.</li>
+            </ul>
+
+            <p>Vì sao cần bước này?</p>
+            <ul>
+                <li>Nếu chỉ nhìn ảnh diffusion, rất khó biết chi tiết nào là thật hay bịa.</li>
+                <li>Cần so sánh với nhiều ảnh đầu vào.</li>
+                <li>LVSM đã học cách đọc nhiều ảnh, nên HAD reuse phần này.</li>
+            </ul>
+
+            <hr>
+
+            <h3>3.11. Cách train bộ chấm điểm bịa ảnh</h3>
+
+            <p>HAD không cần gán nhãn thủ công.</p>
+
+            <p>Với mỗi camera mới, tác giả tạo bộ ba ảnh:</p>
+            <ul>
+                <li>$I^{gt}$: ảnh thật ở camera đó.</li>
+                <li>$R_\Phi(\tilde{c})$: ảnh render từ 3DGS.</li>
+                <li>$\tilde{i}_G$: ảnh diffusion đã sửa.</li>
+            </ul>
+
+            <p>Điểm bịa ảnh ground-truth được tạo bằng MAE:</p>
+
+            $$
+            s^{gt}
+            =
+            \text{MAE}(\tilde{i}_G, I^{gt})
+            $$
+
+            <p>Sau đó train mạng bằng L2 loss:</p>
+
+            $$
+            L_{score}
+            =
+            \|s - s^{gt}\|_2^2
+            $$
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Nếu ảnh diffusion khác ảnh thật nhiều ở pixel nào, pixel đó có điểm bịa cao.</li>
+                <li>Nếu ảnh diffusion gần ảnh thật, pixel đó có điểm bịa thấp.</li>
+                <li>Cách này biến lỗi diffusion thành nhãn huấn luyện mà không cần annotate thủ công.</li>
+            </ul>
+
+            <p>Paper mô tả bộ dữ liệu train bằng pipeline Difix3D: mỗi scene dùng 9 ảnh đầu vào để train 3DGS, sau đó tạo 100 ảnh bổ sung ở resolution $960 \times 540$; ground-truth ảnh thật ở camera tương ứng được dùng để tính điểm bịa ảnh. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</p>
+
+            <hr>
+
+            <h3>3.12. Multi-sampling: tạo nhiều ảnh rồi chọn pixel ít bịa nhất</h3>
+
+            <p>Một ảnh tham chiếu có thể không đủ thông tin cho mọi vùng.</p>
+
+            <p>HAD làm như sau:</p>
+            <ul>
+                <li>Chọn nhiều ảnh đầu vào làm ảnh tham chiếu.</li>
+                <li>Với mỗi ảnh tham chiếu, diffusion tạo một ảnh bổ sung.</li>
+                <li>Mỗi ảnh bổ sung có một bản đồ điểm bịa ảnh.</li>
+                <li>Với từng pixel, chọn phiên bản có điểm bịa thấp nhất.</li>
+            </ul>
+
+            <p>Công thức:</p>
+
+            $$
+            \{(\tilde{i}^{k}_{G}, s^k) \mid k \in \{1,\ldots,K\}\}
+            $$
+
+            <p>Sau đó:</p>
+
+            $$
+            \tilde{i}[p]
+            =
+            \tilde{i}^{k^*}_{G}[p],
+            \quad
+            k^*
+            =
+            \arg\min_k s^k[p]
+            $$
+
+            <p>Trong đó:</p>
+            <ul>
+                <li>$k$: chỉ số ảnh tham chiếu.</li>
+                <li>$\tilde{i}^{k}_{G}$: ảnh diffusion từ ảnh tham chiếu thứ $k$.</li>
+                <li>$s^k$: điểm bịa ảnh tương ứng.</li>
+                <li>$p$: pixel đang xét.</li>
+                <li>$k^*$: phiên bản có điểm bịa thấp nhất tại pixel $p$.</li>
+            </ul>
+
+            <p>Ý nghĩa:</p>
+            <ul>
+                <li>Với mỗi pixel, nhiều ảnh diffusion cùng "tranh cử".</li>
+                <li>HAD chọn pixel từ ảnh có điểm bịa thấp nhất.</li>
+                <li>Cách này tận dụng nhiều ảnh đầu vào hơn mà không cần train lại diffusion.</li>
+            </ul>
+
+            <p>Paper cho thấy ArgMin, tức chọn pixel có điểm bịa thấp nhất, tốt hơn weighted average trong ablation. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</p>
+
+            <hr>
+
+            <h3>3.13. Toàn bộ pipeline</h3>
+
+            <pre><code>Input:
+  P = tập ảnh đầu vào có camera
+
+Train 3DGS:
+  1. Lấy ảnh đầu vào i và camera c.
+  2. Render ảnh từ 3DGS:
+       R&#934;(c)
+  3. Tính loss ảnh đầu vào:
+       Linput
+
+Tạo ảnh bổ sung:
+  4. Chọn camera mới c~
+  5. Render ảnh từ 3DGS:
+       R&#934;(c~)
+  6. Dùng diffusion sửa ảnh:
+       i~G = G(R&#934;(c~) | iref)
+  7. Dùng bộ đọc nhiều ảnh:
+       Fc~ = V(P | c~)
+  8. Dùng mạng chấm điểm:
+       s = S&#952;(i~G | R&#934;(c~), Fc~)
+  9. Threshold s để tạo mặt nạ m
+  10. Tính loss ảnh bổ sung:
+       chỉ dùng pixel không bị đánh dấu là sai
+
+Update:
+  11. Tối ưu 3DGS bằng:
+       &#955;input Linput + &#955;novel Lnovel</code></pre>
+
+            <hr>
+
+            <h3>3.14. HAD reuse những gì?</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thành phần reuse</th>
+                        <th>Vai trò trong HAD</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>3DGS</td>
+                        <td>Biểu diễn scene và render ảnh</td>
+                    </tr>
+                    <tr>
+                        <td>Difix3D</td>
+                        <td>Bộ sửa ảnh diffusion</td>
+                    </tr>
+                    <tr>
+                        <td>LVSM</td>
+                        <td>Bộ đọc nhiều ảnh cho mạng chấm điểm bịa ảnh</td>
+                    </tr>
+                    <tr>
+                        <td>U-Net nhỏ</td>
+                        <td>Nhánh dự đoán điểm bịa ảnh</td>
+                    </tr>
+                    <tr>
+                        <td>Ý tưởng masked supervision</td>
+                        <td>Chỉ train bằng pixel đáng tin</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>Điểm mới không nằm ở việc tạo diffusion model mới.</p>
+
+            <p>Điểm mới nằm ở:</p>
+            <ul>
+                <li>học điểm bịa ảnh theo từng pixel;</li>
+                <li>dùng điểm đó để mask ảnh bổ sung;</li>
+                <li>dùng điểm đó để chọn pixel tốt nhất từ nhiều ảnh diffusion;</li>
+                <li>cho 3DGS học từ ảnh diffusion theo cách an toàn hơn.</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 4: Kết quả -->
+            <h1 id="ket-qua">4. Kết quả</h1>
+
+            <h3>4.1. DL3DV, setting 9 ảnh đầu vào</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th style="text-align: right;">PSNR</th>
+                        <th style="text-align: right;">SSIM</th>
+                        <th style="text-align: right;">LPIPS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Gsplat-3DGS</td>
+                        <td style="text-align: right;">19.004</td>
+                        <td style="text-align: right;">0.679</td>
+                        <td style="text-align: right;">0.281</td>
+                    </tr>
+                    <tr>
+                        <td>Gsplat-MCMC</td>
+                        <td style="text-align: right;">20.532</td>
+                        <td style="text-align: right;">0.721</td>
+                        <td style="text-align: right;">0.225</td>
+                    </tr>
+                    <tr>
+                        <td>Difix3D</td>
+                        <td style="text-align: right;">21.355</td>
+                        <td style="text-align: right;">0.734</td>
+                        <td style="text-align: right;">0.199</td>
+                    </tr>
+                    <tr>
+                        <td>HAD, full model</td>
+                        <td style="text-align: right;"><strong>22.134</strong></td>
+                        <td style="text-align: right;"><strong>0.757</strong></td>
+                        <td style="text-align: right;"><strong>0.190</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>Nhận xét:</p>
+            <ul>
+                <li>HAD cao hơn Difix3D khoảng <strong>+0.78 dB PSNR</strong> trên DL3DV.</li>
+                <li>SSIM cũng tăng từ 0.734 lên 0.757.</li>
+                <li>LPIPS giảm từ 0.199 xuống 0.190.</li>
+                <li>Điều này cho thấy HAD không chỉ làm ảnh nhìn tốt hơn, mà còn giữ ảnh gần ground-truth hơn. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <h3>4.2. MipNeRF360, cross-domain</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th style="text-align: right;">PSNR</th>
+                        <th style="text-align: right;">SSIM</th>
+                        <th style="text-align: right;">LPIPS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Gsplat-3DGS</td>
+                        <td style="text-align: right;">15.748</td>
+                        <td style="text-align: right;">0.424</td>
+                        <td style="text-align: right;">0.431</td>
+                    </tr>
+                    <tr>
+                        <td>Gsplat-MCMC</td>
+                        <td style="text-align: right;">17.102</td>
+                        <td style="text-align: right;">0.454</td>
+                        <td style="text-align: right;">0.385</td>
+                    </tr>
+                    <tr>
+                        <td>FSGS</td>
+                        <td style="text-align: right;">17.940</td>
+                        <td style="text-align: right;">0.492</td>
+                        <td style="text-align: right;">0.468</td>
+                    </tr>
+                    <tr>
+                        <td>GenFusion</td>
+                        <td style="text-align: right;">18.360</td>
+                        <td style="text-align: right;">0.496</td>
+                        <td style="text-align: right;">0.465</td>
+                    </tr>
+                    <tr>
+                        <td>Difix3D</td>
+                        <td style="text-align: right;">18.001</td>
+                        <td style="text-align: right;">0.475</td>
+                        <td style="text-align: right;">0.350</td>
+                    </tr>
+                    <tr>
+                        <td>HAD</td>
+                        <td style="text-align: right;"><strong>18.689</strong></td>
+                        <td style="text-align: right;"><strong>0.5094</strong></td>
+                        <td style="text-align: right;"><strong>0.334</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>Nhận xét:</p>
+            <ul>
+                <li>HAD vẫn tốt khi chuyển sang dataset khác.</li>
+                <li>HAD cao hơn Difix3D khoảng <strong>+0.69 dB PSNR</strong> trên MipNeRF360.</li>
+                <li>Kết quả này cho thấy bộ chấm điểm bịa ảnh không chỉ hoạt động trên dataset train. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <h3>4.3. Ablation: từng thành phần có tác dụng gì?</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variant</th>
+                        <th style="text-align: right;">PSNR</th>
+                        <th style="text-align: right;">SSIM</th>
+                        <th style="text-align: right;">LPIPS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Difix3D</td>
+                        <td style="text-align: right;">21.355</td>
+                        <td style="text-align: right;">0.734</td>
+                        <td style="text-align: right;">0.199</td>
+                    </tr>
+                    <tr>
+                        <td>Difix3D + HAD</td>
+                        <td style="text-align: right;">21.779</td>
+                        <td style="text-align: right;">0.749</td>
+                        <td style="text-align: right;">0.195</td>
+                    </tr>
+                    <tr>
+                        <td>Difix3D + HAD + Multi-sampling</td>
+                        <td style="text-align: right;">21.983</td>
+                        <td style="text-align: right;">0.755</td>
+                        <td style="text-align: right;">0.195</td>
+                    </tr>
+                    <tr>
+                        <td>HAD full model</td>
+                        <td style="text-align: right;"><strong>22.134</strong></td>
+                        <td style="text-align: right;"><strong>0.757</strong></td>
+                        <td style="text-align: right;"><strong>0.190</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>Kết luận:</p>
+            <ul>
+                <li>Thêm bộ chấm điểm bịa ảnh đã cải thiện rõ.</li>
+                <li>Multi-sampling tiếp tục cải thiện.</li>
+                <li>Full model đạt kết quả tốt nhất. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <h3>4.4. Ablation: bộ chấm điểm bịa ảnh</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estimator</th>
+                        <th style="text-align: right;">MAE ↓</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Retrained Difix3D</td>
+                        <td style="text-align: right;">0.058</td>
+                    </tr>
+                    <tr>
+                        <td>HAD không dùng bộ đọc nhiều ảnh pretrained</td>
+                        <td style="text-align: right;">0.054</td>
+                    </tr>
+                    <tr>
+                        <td>HAD full</td>
+                        <td style="text-align: right;"><strong>0.043</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>Kết luận:</p>
+            <ul>
+                <li>Bộ đọc nhiều ảnh từ LVSM rất quan trọng.</li>
+                <li>Nếu không có bộ đọc nhiều ảnh tốt, mạng khó phát hiện pixel nào là chi tiết bịa.</li>
+                <li>Diffusion tự chấm điểm không tốt bằng cách dùng bộ đọc nhiều ảnh riêng. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 5: Hạn chế -->
+            <h1 id="han-che">5. Hạn chế</h1>
+
+            <h3>5.1. Điểm bịa ảnh được học từ MAE</h3>
+            <ul>
+                <li>Ground-truth điểm bịa ảnh được tính bằng sai khác giữa ảnh diffusion và ảnh thật.</li>
+                <li>Nhưng MAE không chỉ đo chi tiết bịa.</li>
+                <li>MAE cũng có thể tăng do:
+                    <ul>
+                        <li>lệch màu;</li>
+                        <li>lệch sáng;</li>
+                        <li>sai căn chỉnh nhỏ;</li>
+                        <li>khác biệt texture không quan trọng.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>5.2. Mặt nạ là threshold cứng</h3>
+            <ul>
+                <li>Pixel bị chia thành hai loại:
+                    <ul>
+                        <li>dùng;</li>
+                        <li>bỏ.</li>
+                    </ul>
+                </li>
+                <li>Cách này đơn giản và hiệu quả.</li>
+                <li>Nhưng nó chưa tận dụng được mức độ tin cậy liên tục.</li>
+                <li>Một hướng cải tiến là dùng uncertainty hoặc EDL để biến mặt nạ thành trọng số mềm.</li>
+            </ul>
+
+            <h3>5.3. Method mới dừng ở pixel-level</h3>
+            <ul>
+                <li>HAD kiểm soát loss ở từng pixel.</li>
+                <li>Nhưng chưa trực tiếp kiểm soát Gaussian nào gây lỗi.</li>
+                <li>Một hướng phát triển là chuyển điểm bịa ảnh từ pixel-level sang Gaussian-level để:
+                    <ul>
+                        <li>giảm opacity;</li>
+                        <li>dừng densify;</li>
+                        <li>prune Gaussian;</li>
+                        <li>hoặc sửa cấu trúc 3DGS.</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h3>5.4. Phụ thuộc LVSM</h3>
+            <ul>
+                <li>HAD reuse bộ đọc nhiều ảnh từ LVSM.</li>
+                <li>Nếu bộ đọc nhiều ảnh không đủ tốt, điểm bịa ảnh cũng bị ảnh hưởng.</li>
+                <li>Paper cũng nêu rằng method bị giới hạn bởi pretrained multi-view encoder và chủ yếu được kiểm chứng trên vùng đã được quan sát. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <h3>5.5. Chi phí train scorer không nhỏ</h3>
+            <ul>
+                <li>Tác giả train bộ chấm điểm bịa ảnh trong 10k iterations.</li>
+                <li>Batch size là 2/GPU.</li>
+                <li>Chi phí khoảng 28 giờ trên 8 GPU NVIDIA V100 32GB. (<a href="https://arxiv.org/html/2605.16873v1">arxiv.org</a>)</li>
+            </ul>
+
+            <hr>
+
+            <!-- SECTION 6: Kết luận -->
+            <h1 id="ket-luan">Kết luận ngắn</h1>
+
+            <ul>
+                <li>HAD là một hướng rất hợp lý cho sparse-view 3D reconstruction.</li>
+                <li>Nó không thay diffusion, không thay 3DGS, mà thêm một lớp kiểm tra giữa diffusion và 3DGS.</li>
+                <li>Điểm mạnh nhất là biến lỗi "diffusion bịa" thành một bản đồ điểm bịa ảnh theo từng pixel.</li>
+                <li>Nhờ đó, 3DGS chỉ học từ phần đáng tin của ảnh diffusion.</li>
+                <li>Novelty chính của paper nằm ở <strong>hallucination-aware supervision</strong>: ảnh bổ sung từ diffusion không còn là teacher tuyệt đối, mà là teacher cần được kiểm tra trước khi dùng.</li>
+            </ul>
+
+        </article>
+    </div>
+
+    <script>
+        (function() {
+            var nav = document.querySelector('.toc-nav');
+            var toggle = nav.querySelector('.toc-toggle');
+            var panel = nav.querySelector('.toc-panel');
+
+            function openNav() {
+                nav.classList.add('open');
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.setAttribute('aria-label', 'Đóng mục lục');
+            }
+
+            function closeNav() {
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute('aria-label', 'Mở mục lục');
+            }
+
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (nav.classList.contains('open')) {
+                    closeNav();
+                } else {
+                    openNav();
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && nav.classList.contains('open')) {
+                    closeNav();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (nav.classList.contains('open') && !nav.contains(e.target)) {
+                    closeNav();
+                }
+            });
+
+            var headings = document.querySelectorAll('.blog-content h1[id]');
+            var links = document.querySelectorAll('.toc-track a[href^="#"]');
+            if (headings.length && links.length) {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            links.forEach(function(link) { link.classList.remove('active'); });
+                            var activeLink = document.querySelector('.toc-track a[href="#' + entry.target.id + '"]');
+                            if (activeLink) activeLink.classList.add('active');
+                        }
+                    });
+                }, {
+                    rootMargin: '-20% 0px -60% 0px',
+                    threshold: 0
+                });
+                headings.forEach(function(h) { observer.observe(h); });
+            }
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script>
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    </script>
+</body>
+</html>

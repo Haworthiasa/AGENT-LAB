@@ -17,7 +17,7 @@ highlight: monokai
 ![Timeline](/content/gpt-1/assets/timeline.png)
 
 ### Giải pháp cốt lõi (Core Solution)
-* **Phương pháp Generative Pre-Training (GPT):** Đề xuất quy trình hai giai đoạn độc lập thay vì huấn luyện riêng biệt từ đầu:
+* **Phương pháp Generative Pre- Training (GPT):** Đề xuất quy trình hai giai đoạn độc lập thay vì huấn luyện riêng biệt từ đầu:
   * **Tiền huấn luyện không giám sát (Unsupervised Pre-training):** Học cấu trúc sâu sắc của ngôn ngữ từ khối lượng khổng lồ văn bản chưa gắn nhãn.
   * **Tinh chỉnh có giám sát (Supervised Fine-tuning):** Thích ứng mô hình đã học sang các tác vụ chuyên biệt bằng tập dữ liệu nhỏ đã gắn nhãn.
 
@@ -138,7 +138,7 @@ highlight: monokai
 
 ---
 
-# 5. Phân tích thực nghiệm (Analysis & Ablation Study)
+# 5. Phân tích thực nghiệm
 
 * **Số lượng tầng chuyển giao:** Hiệu suất tăng tỉ lệ thuận với số lượng tầng Transformer được tái sử dụng từ giai đoạn pre-training.
 * **Năng lực Zero-shot:** Mô hình tự phát triển khả năng giải quyết tác vụ cơ bản ngay trong giai đoạn pre-training không giám sát.
@@ -153,6 +153,6 @@ highlight: monokai
 
 ---
 
-# 6. Kết luận (Conclusion)
+# 6. Kết luận
 
 *GPT-1 đã đặt nền móng cho kỷ nguyên của các mô hình ngôn ngữ lớn (LLMs) bằng cách chứng minh rằng việc tiền huấn luyện trên dữ liệu khổng lồ, kết hợp với kiến trúc Transformer và tinh chỉnh có giám sát, có thể tạo ra một hệ thống hiểu ngôn ngữ tổng quát mạnh mẽ vượt xa các mô hình chuyên biệt trước đó.*

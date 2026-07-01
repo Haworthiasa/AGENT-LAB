@@ -1,0 +1,1422 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GPT-1 — Improving Language Understanding by Generative Pre-Training</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/white.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/monokai.min.css">
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                tags: 'none'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+    <style>
+        /* ===========================================
+           GPT-1 — Visual identity
+           Accent: deep emerald #1a6b4b (generative)
+           Background: warm white #fdfaf5
+           =========================================== */
+        :root {
+            --c-text: #1a2421;
+            --c-muted: #5d6964;
+            --c-accent: #1a6b4b;
+            --c-accent-soft: #2d8a64;
+            --c-warm: #c44f1c;
+            --c-good: #166534;
+            --c-weak: #92400e;
+            --c-bg-soft: #f4f1ea;
+            --c-border: #d8d4ca;
+            --c-row-hl: #e7f0eb;
+            --c-panel-bg: rgba(255, 255, 255, 0.78);
+            --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+            --font-body: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+        }
+
+        .reveal {
+            font-family: var(--font-body);
+            color: var(--c-text);
+        }
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: -0.01em;
+            color: var(--c-text);
+        }
+        .reveal h1 { font-size: 2.8em; }
+        .reveal h2 { font-size: 2.0em; }
+        .reveal h3 { font-size: 1.5em; }
+        .reveal h4 { font-size: 1.2em; }
+
+        .reveal .slides > section > section { padding: 30px 40px; }
+
+        /* ===========================================
+           Title slide
+           =========================================== */
+        .title-slide {
+            position: relative;
+            overflow: hidden;
+        }
+        .title-slide::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 25% 20%, rgba(26,107,75,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 75% 75%, rgba(196,79,28,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(26,107,75,0.04) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        .title-slide .title-content {
+            position: relative;
+            z-index: 1;
+        }
+        .title-slide .paper-title {
+            font-family: var(--font-display);
+            font-size: 1.3em;
+            font-weight: 500;
+            color: var(--c-muted);
+            font-style: italic;
+            margin-top: 0.6em;
+            line-height: 1.35;
+        }
+        .title-slide .paper-author {
+            font-size: 0.7em;
+            color: var(--c-muted);
+            margin-top: 1.4em;
+            letter-spacing: 0.04em;
+        }
+        .title-slide .subtitle-line {
+            font-size: 0.65em;
+            color: var(--c-muted);
+            margin-top: 0.8em;
+            font-style: italic;
+        }
+        .title-slide .big-gpt {
+            font-family: var(--font-display);
+            font-size: 3.0em;
+            font-weight: 700;
+            color: var(--c-accent);
+            letter-spacing: -0.02em;
+            line-height: 1;
+            margin-bottom: 0.1em;
+        }
+        .title-slide .year-tag {
+            display: inline-block;
+            margin-top: 1.2em;
+            padding: 4px 14px;
+            border: 1px solid var(--c-accent);
+            border-radius: 999px;
+            color: var(--c-accent);
+            font-size: 0.55em;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+
+        /* ===========================================
+           Section divider
+           =========================================== */
+        .section-divider {
+            position: relative;
+        }
+        .section-divider .section-num {
+            font-family: var(--font-display);
+            font-size: 4em;
+            font-weight: 700;
+            color: var(--c-accent);
+            opacity: 0.15;
+            line-height: 1;
+            margin-bottom: -0.3em;
+        }
+        .section-divider .section-title {
+            font-family: var(--font-display);
+            font-size: 2em;
+            font-weight: 600;
+            color: var(--c-text);
+        }
+        .section-divider .section-subtitle {
+            font-size: 0.9em;
+            color: var(--c-muted);
+            margin-top: 0.5em;
+            font-style: italic;
+            max-width: 620px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .section-divider .section-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 1.6em;
+            font-size: 0.5em;
+            color: var(--c-muted);
+        }
+        .section-divider .section-flow .box {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: var(--c-bg-soft);
+            padding: 8px 14px;
+            font-weight: 600;
+        }
+        .section-divider .section-flow .arrow {
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* ===========================================
+           Table of contents
+           =========================================== */
+        .toc {
+            text-align: left;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+        .toc h3 {
+            margin-bottom: 0.7em;
+        }
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            padding: 0.5em 0;
+            border-bottom: 1px solid var(--c-border);
+            font-size: 0.85em;
+        }
+        .toc-item .toc-num {
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--c-muted);
+            width: 2.2em;
+            flex-shrink: 0;
+        }
+        .toc-item .toc-label {
+            flex: 1;
+        }
+        .toc-item .toc-tag {
+            font-size: 0.75em;
+            color: var(--c-muted);
+            font-style: italic;
+        }
+
+        /* ===========================================
+           Generic helpers
+           =========================================== */
+        .key-point {
+            margin-top: 1em;
+            padding: 0.6em 1em;
+            background: var(--c-row-hl);
+            border-left: 3px solid var(--c-accent);
+            font-size: 0.72em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            box-sizing: border-box;
+        }
+        .callout-good {
+            padding: 0.5em 0.9em;
+            background: #ecfdf5;
+            border-left: 3px solid var(--c-good);
+            font-size: 0.68em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            color: var(--c-good);
+            box-sizing: border-box;
+        }
+        .callout-weak {
+            padding: 0.5em 0.9em;
+            background: #fffbeb;
+            border-left: 3px solid var(--c-weak);
+            font-size: 0.68em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            color: var(--c-weak);
+            box-sizing: border-box;
+        }
+        .slide-def {
+            font-size: 0.72em;
+            color: var(--c-muted);
+            max-width: 800px;
+            margin: 0 auto 0.6em;
+            line-height: 1.45;
+        }
+        .slide-label {
+            font-size: 0.55em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* Alignment rules for content slides inside vertical stacks */
+        .aligned-stack > section:not(.section-divider) .slide-label,
+        .aligned-stack > section:not(.section-divider) h3,
+        .aligned-stack > section:not(.section-divider) .slide-def,
+        .aligned-stack > section:not(.section-divider) .key-point,
+        .aligned-stack > section:not(.section-divider) .infobox,
+        .aligned-stack > section:not(.section-divider) .note-box,
+        .aligned-stack > section:not(.section-divider) .image-block,
+        .aligned-stack > section:not(.section-divider) .callout-good,
+        .aligned-stack > section:not(.section-divider) .callout-weak {
+            width: min(1000px, 100%);
+            max-width: min(1000px, 100%);
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .aligned-stack > section:not(.section-divider) h3 {
+            margin-top: 0;
+            margin-bottom: 0.3em;
+        }
+
+        /* ===========================================
+           Vertical nav hint
+           =========================================== */
+        .nav-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: var(--c-border);
+            animation: pulse-arrow 2.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes pulse-arrow {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 0.9; transform: translateX(-50%) translateY(4px); }
+        }
+
+        /* ===========================================
+           Image blocks
+           =========================================== */
+        .image-block {
+            text-align: center;
+            margin: 0.6em auto 0.4em;
+        }
+        .image-block img {
+            max-width: min(960px, 100%);
+            max-height: 360px;
+            height: auto;
+            display: inline-block;
+            border-radius: 6px;
+        }
+        .image-block.full img {
+            max-width: min(1100px, 100%);
+            max-height: 520px;
+        }
+        .image-block.tall img {
+            max-width: min(720px, 100%);
+            max-height: 460px;
+        }
+        .image-caption {
+            font-size: 0.45em;
+            color: var(--c-muted);
+            font-style: italic;
+            margin-top: 6px;
+        }
+
+        /* ===========================================
+           Cards / grids
+           =========================================== */
+        .g-grid-2, .g-grid-3, .g-grid-4 {
+            display: grid;
+            gap: 16px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto 0;
+            align-items: stretch;
+        }
+        .g-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .g-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .g-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .g-card {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: var(--c-panel-bg);
+            padding: 14px 16px;
+            box-sizing: border-box;
+        }
+        .g-card h4 {
+            margin: 0 0 0.4em;
+            font-size: 0.78em;
+            color: var(--c-accent);
+        }
+        .g-card p, .g-card li {
+            margin: 0.25em 0;
+            font-size: 0.5em;
+            line-height: 1.5;
+            color: var(--c-muted);
+        }
+        .g-card ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+        .g-card strong { color: var(--c-text); }
+
+        .g-emerald { background: #e7f0eb; border-color: #9ec5ad; }
+        .g-amber   { background: #fff2e8; border-color: #deb08f; }
+        .g-violet  { background: #f0ebf7; border-color: #b9a7d2; }
+        .g-slate   { background: #eef0f1; border-color: #b8c0c4; }
+
+        /* ===========================================
+           Flow strip / two-stage visual
+           =========================================== */
+        .g-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: min(1000px, 100%);
+            margin: 0.6em auto;
+            font-size: 0.55em;
+        }
+        .g-flow .box {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px 16px;
+            font-weight: 700;
+            color: var(--c-text);
+            text-align: center;
+            min-width: 130px;
+        }
+        .g-flow .box.alt { background: var(--c-row-hl); border-color: #9ec5ad; }
+        .g-flow .box.warm { background: #fff2e8; border-color: #deb08f; }
+        .g-flow .arrow { color: var(--c-accent); font-weight: 700; font-size: 1.2em; }
+
+        /* ===========================================
+           Two-column body layout
+           =========================================== */
+        .g-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto 0;
+            text-align: left;
+            align-items: start;
+        }
+        .g-cols .col-text {
+            font-size: 0.6em;
+            line-height: 1.55;
+            color: var(--c-muted);
+        }
+        .g-cols .col-text h4 {
+            font-size: 0.95em;
+            color: var(--c-accent);
+            margin: 0 0 0.4em;
+        }
+        .g-cols .col-text ul {
+            margin: 0.4em 0 0;
+            padding-left: 1.1em;
+        }
+        .g-cols .col-text li { margin-bottom: 0.35em; }
+        .g-cols .col-text strong { color: var(--c-text); }
+
+        /* ===========================================
+           Formula block
+           =========================================== */
+        .g-formula {
+            width: fit-content;
+            max-width: 900px;
+            margin: 0.5em auto;
+            padding: 12px 22px;
+            border: 1px solid #b8c8be;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.7em;
+            color: var(--c-text);
+            text-align: center;
+        }
+        .g-formula-strip {
+            width: min(1000px, 100%);
+            margin: 0.2em auto 0.5em;
+            padding: 10px 16px;
+            border: 1px solid #b8c8be;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.55em;
+            text-align: left;
+            color: var(--c-muted);
+            box-sizing: border-box;
+        }
+        .g-formula-strip strong {
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* ===========================================
+           Stepper for 3 processing steps
+           =========================================== */
+        .g-stepper {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto;
+        }
+        .g-step {
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            background: #fff;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            text-align: left;
+            position: relative;
+        }
+        .g-step-num {
+            display: inline-grid;
+            place-items: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--c-accent);
+            color: #fff;
+            font-size: 0.85em;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .g-step h4 {
+            margin: 0 0 4px;
+            font-size: 0.7em;
+            color: var(--c-accent);
+        }
+        .g-step p {
+            margin: 0;
+            font-size: 0.5em;
+            line-height: 1.5;
+            color: var(--c-muted);
+        }
+        .g-step .g-mini-formula {
+            margin-top: 6px;
+            padding: 6px 10px;
+            background: var(--c-bg-soft);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        /* ===========================================
+           Special token chips for input formats
+           =========================================== */
+        .g-token-line {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin: 0.4em auto 0.5em;
+            font-size: 0.55em;
+        }
+        .g-token {
+            border: 1px solid var(--c-border);
+            border-radius: 6px;
+            padding: 6px 11px;
+            background: #fff;
+            font-weight: 700;
+            color: var(--c-text);
+            font-size: 0.95em;
+        }
+        .g-token.start { background: #e7f0eb; border-color: #9ec5ad; color: var(--c-accent); }
+        .g-token.end   { background: #f0ebf7; border-color: #b9a7d2; color: #5b3a9e; }
+        .g-token.sep   { background: #fff2e8; border-color: #deb08f; color: var(--c-warm); }
+        .g-token.text  { background: #f7f6f2; border-color: #d8d4ca; color: var(--c-text); }
+        .g-token.cand  { background: #ecfdf5; border-color: #86efac; color: var(--c-good); }
+
+        /* ===========================================
+           Data tables
+           =========================================== */
+        .g-table {
+            width: min(1000px, 100%);
+            margin: 0.5em auto;
+            border-collapse: collapse;
+            font-size: 0.5em;
+            text-align: left;
+        }
+        .g-table th {
+            background: var(--c-accent);
+            color: #fff;
+            padding: 8px 12px;
+            font-weight: 700;
+        }
+        .g-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--c-border);
+            color: var(--c-muted);
+            vertical-align: top;
+        }
+        .g-table tr.hl td {
+            background: var(--c-row-hl);
+            color: var(--c-text);
+            font-weight: 700;
+        }
+        .g-table td.k { color: var(--c-text); font-weight: 700; }
+
+        /* ===========================================
+           Compare blocks (good vs weak)
+           =========================================== */
+        .g-compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto;
+            text-align: left;
+        }
+        .g-compare .col {
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+        .g-compare .col h4 {
+            margin: 0 0 0.5em;
+            font-size: 0.85em;
+        }
+        .g-compare .col ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+        .g-compare .col li {
+            font-size: 0.55em;
+            line-height: 1.55;
+            margin-bottom: 0.3em;
+        }
+        .g-compare .good { background: #e7f0eb; border: 1px solid #9ec5ad; }
+        .g-compare .good h4 { color: var(--c-accent); }
+        .g-compare .good li { color: var(--c-text); }
+        .g-compare .weak { background: #f4eee5; border: 1px solid #d6c5a3; }
+        .g-compare .weak h4 { color: var(--c-warm); }
+        .g-compare .weak li { color: var(--c-text); }
+
+        /* ===========================================
+           Big number callouts
+           =========================================== */
+        .g-big-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            width: min(900px, 100%);
+            margin: 0.6em auto;
+        }
+        .g-big-stat {
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            background: #fff;
+            padding: 16px 14px;
+            text-align: center;
+        }
+        .g-big-stat .num {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 2.0em;
+            font-weight: 700;
+            color: var(--c-accent);
+            line-height: 1;
+        }
+        .g-big-stat .cap {
+            display: block;
+            font-size: 0.45em;
+            color: var(--c-muted);
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        /* ===========================================
+           Two-stage callout (verdict line)
+           =========================================== */
+        .g-verdict {
+            width: min(1000px, 100%);
+            margin: 0.5em auto 0;
+            border-left: 4px solid var(--c-accent);
+            background: var(--c-row-hl);
+            border-radius: 0 6px 6px 0;
+            padding: 10px 16px;
+            font-size: 0.6em;
+            line-height: 1.5;
+            text-align: left;
+            color: var(--c-text);
+            box-sizing: border-box;
+        }
+        .g-verdict strong { color: var(--c-accent); }
+
+        /* ===========================================
+           Dataset caption blocks
+           =========================================== */
+        .g-dataset {
+            border: 1px solid var(--c-border);
+            border-left: 3px solid var(--c-accent);
+            background: var(--c-bg-soft);
+            border-radius: 0 6px 6px 0;
+            padding: 8px 14px;
+            font-size: 0.5em;
+            line-height: 1.55;
+            color: var(--c-muted);
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .g-dataset b { color: var(--c-accent); }
+
+        .g-dataset-list {
+            display: grid;
+            gap: 10px;
+            width: min(1000px, 100%);
+            margin: 0.4em auto 0;
+        }
+        .g-dataset-list .g-dataset { width: 100%; }
+
+        /* ===========================================
+           Conclusion quote
+           =========================================== */
+        .g-quote {
+            width: min(900px, 100%);
+            margin: 0.8em auto;
+            padding: 22px 28px;
+            border-left: 4px solid var(--c-accent);
+            background: #fff;
+            border-radius: 0 10px 10px 0;
+            font-family: var(--font-display);
+            font-size: 0.95em;
+            font-style: italic;
+            line-height: 1.5;
+            color: var(--c-text);
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .g-quote .sig {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--font-body);
+            font-style: normal;
+            font-size: 0.55em;
+            color: var(--c-muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* ===========================================
+           Code chip for sample input
+           =========================================== */
+        .g-code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.55em;
+            background: #1a2421;
+            color: #d4e8de;
+            padding: 10px 14px;
+            border-radius: 8px;
+            line-height: 1.55;
+            text-align: left;
+            width: fit-content;
+            max-width: min(960px, 100%);
+            margin: 0.3em auto 0.3em;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .g-code .t-start { color: #86efac; font-weight: 700; }
+        .g-code .t-end   { color: #c4b5fd; font-weight: 700; }
+        .g-code .t-sep   { color: #fdba74; font-weight: 700; }
+        .g-code .t-text  { color: #e6f1ea; }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+<!-- ================================================================
+     VERTICAL STACK 0: Title + Table of Contents
+     ================================================================ -->
+<section>
+
+<!-- SLIDE 0.1: Title -->
+<section class="title-slide" data-background-color="#fdfaf5">
+    <div class="title-content">
+        <div class="big-gpt">GPT-1</div>
+        <div class="paper-title">Improving Language Understanding<br>by Generative Pre-Training</div>
+        <div class="paper-author">Alec Radford &middot; Karthik Narasimhan &middot; Tim Salimans &middot; Ilya Sutskever</div>
+        <div class="subtitle-line">OpenAI &middot; Paper gốc đặt nền móng cho kỷ nguyên mô hình ngôn ngữ lớn</div>
+        <div class="year-tag">2018</div>
+    </div>
+</section>
+
+<!-- SLIDE 0.2: TOC -->
+<section data-background-color="#fdfaf5">
+    <div class="toc">
+        <div class="slide-label">Mục lục</div>
+        <h3>Nội dung chính</h3>
+        <div class="toc-item">
+            <span class="toc-num">1.</span>
+            <span class="toc-label">Tóm tắt (Executive Summary)</span>
+            <span class="toc-tag">bối cảnh &amp; giải pháp</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">2.</span>
+            <span class="toc-label">Mục đích nghiên cứu</span>
+            <span class="toc-tag">động lực &amp; mục tiêu</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">3.</span>
+            <span class="toc-label">GPT Framework</span>
+            <span class="toc-tag">pre-train &amp; fine-tune</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">4.</span>
+            <span class="toc-label">Task-specific Input &amp; Kết quả</span>
+            <span class="toc-tag">NLI &middot; QA &middot; Similarity &middot; Classification</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">5.</span>
+            <span class="toc-label">Phân tích thực nghiệm</span>
+            <span class="toc-tag">số tầng &amp; ablation</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">6.</span>
+            <span class="toc-label">Kết luận</span>
+            <span class="toc-tag">nền móng cho LLM</span>
+        </div>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 1: Tóm tắt
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 1.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">1.</div>
+    <div class="section-title">TÓM TẮT</div>
+    <div class="section-subtitle">Bối cảnh thống trị của tư duy task-specific<br>và bước chuyển dịch sang pre-train &amp; fine-tune.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">Bối cảnh</span><span class="arrow">→</span>
+        <span class="box">Giải pháp cốt lõi</span><span class="arrow">→</span>
+        <span class="box">Tác động</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 1.1: Bối cảnh -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">1.1 &middot; Bối cảnh</div>
+    <h3>Tư Duy Task-Specific Thống Trị Ngành NLP</h3>
+    <p class="slide-def">Trước GPT-1, hầu hết hệ thống NLP được thiết kế "đo ni đóng giày" cho một bài toán duy nhất, khiến tri thức không thể chuyển giao.</p>
+
+    <div class="g-grid-3">
+        <div class="g-card g-amber">
+            <h4>1. Chuyên biệt hoá</h4>
+            <p>Mỗi tác vụ (phân loại, QA, dịch, NER…) cần <strong>kiến trúc và dữ liệu nhãn riêng</strong>.</p>
+        </div>
+        <div class="g-card g-amber">
+            <h4>2. Không tái sử dụng</h4>
+            <p>Mô hình phân loại văn bản <strong>gần như vô dụng</strong> cho trả lời câu hỏi hay suy luận.</p>
+        </div>
+        <div class="g-card g-amber">
+            <h4>3. Rào cản mở rộng</h4>
+            <p>Thiếu cơ chế hiểu ngôn ngữ tổng quát buộc người làm phải <strong>thiết kế lại từ đầu</strong> cho mỗi bài toán mới.</p>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        <strong>Vấn đề:</strong> Không có "nền tảng ngôn ngữ" dùng chung → chi phí nhân lực và dữ liệu tăng theo số lượng tác vụ.
+    </div>
+</section>
+
+<!-- SLIDE 1.2: Giải pháp cốt lõi + timeline -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">1.2 &middot; Giải pháp cốt lõi</div>
+    <h3>Hai Giai Đoạn: Pre-Training &amp; Fine-Tuning</h3>
+    <p class="slide-def">GPT đề xuất quy trình hai giai đoạn độc lập: học ngôn ngữ từ văn bản thô, rồi thích ứng vào tác vụ có nhãn bằng tập dữ liệu nhỏ.</p>
+
+    <div class="g-flow">
+        <div class="box alt">Văn bản thô khổng lồ<br><span style="font-weight:400; color: var(--c-muted); font-size:0.9em;">(không có nhãn)</span></div>
+        <div class="arrow">→</div>
+        <div class="box alt">1. Tiền huấn luyện<br>không giám sát</div>
+        <div class="arrow">→</div>
+        <div class="box warm">Mô hình nền tảng<br><span style="font-weight:400; color: var(--c-muted); font-size:0.9em;">đã học cấu trúc ngôn ngữ</span></div>
+        <div class="arrow">→</div>
+        <div class="box warm">2. Tinh chỉnh<br>có giám sát</div>
+        <div class="arrow">→</div>
+        <div class="box">Ứng dụng tác vụ<br><span style="font-weight:400; color: var(--c-muted); font-size:0.9em;">NLI, QA, phân loại…</span></div>
+    </div>
+
+    <div class="image-block">
+        <img src="assets/timeline.png" alt="Timeline của quá trình nghiên cứu">
+        <div class="image-caption">Dòng thời gian minh hoạ: từ dữ liệu thô đến mô hình có thể ứng dụng đa tác vụ.</div>
+    </div>
+
+    <div class="g-verdict">
+        <strong>Ý tưởng then chốt:</strong> tách "hiểu ngôn ngữ" ra khỏi "giải bài toán cụ thể" — học trước, thích ứng sau.
+    </div>
+</section>
+
+<!-- SLIDE 1.3: Tác động -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">1.3 &middot; Tác động</div>
+    <h3>Tác Động Thực Tiễn Của GPT-1</h3>
+    <p class="slide-def">Tác động lớn nhất không nằm ở điểm số benchmark, mà ở chỗ nó thay đổi cách cộng đồng NLP nghĩ về thiết kế mô hình.</p>
+
+    <div class="g-compare">
+        <div class="col good">
+            <h4>Tối giản kiến trúc</h4>
+            <ul>
+                <li>Một kiến trúc duy nhất (Transformer Decoder) phục vụ <strong>nhiều tác vụ</strong>.</li>
+                <li>Thay đổi tối thiểu: thêm 1 lớp tuyến tính và định dạng lại đầu vào.</li>
+                <li>Không phải thiết kế lại mạng cho từng bài toán mới.</li>
+            </ul>
+        </div>
+        <div class="col weak">
+            <h4>Chuyển dịch tư duy</h4>
+            <ul>
+                <li>Cũ: <em>"xây mô hình mới cho mỗi bài toán"</em>.</li>
+                <li>Mới: <em>"huấn luyện một mô hình tổng quát, tái sử dụng linh hoạt"</em>.</li>
+                <li>Mở đường cho BERT (2018), GPT-2 (2019), GPT-3 (2020) và cả họ LLM hiện đại.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        GPT-1 không chỉ là một mô hình — đó là <strong>tuyên ngôn về cách làm NLP</strong>: dùng dữ liệu thô để học biểu diễn chung, rồi thích ứng.
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 2: Mục đích nghiên cứu
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 2.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">2.</div>
+    <div class="section-title">MỤC ĐÍCH NGHIÊN CỨU</div>
+    <div class="section-subtitle">Vì sao cần một mô hình tổng quát<br>và mục tiêu cụ thể của bài báo.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">Động lực</span><span class="arrow">→</span>
+        <span class="box">Mục tiêu</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 2.1: Động lực -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">2.1 &middot; Động lực</div>
+    <h3>Hai Rào Cản Của NLP Đương Thời</h3>
+    <p class="slide-def">Hai hạn chế cốt lõi kìm hãm khả năng mở rộng và tái sử dụng mô hình trước GPT-1.</p>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-amber">
+            <h4>Khan hiếm dữ liệu nhãn</h4>
+            <ul>
+                <li>Mô hình đương thời phụ thuộc nặng vào <strong>dữ liệu gán nhãn thủ công</strong>.</li>
+                <li>Chi phí tạo nhãn rất đắt, đặc biệt với tác vụ đặc thù (y tế, pháp lý…).</li>
+                <li>Quy mô nhãn thường <strong>không đủ lớn</strong> để mô hình học biểu diễn sâu.</li>
+                <li>Mỗi lĩnh vực mới lại phải thu thập nhãn từ đầu.</li>
+            </ul>
+        </div>
+        <div class="col-text g-card g-amber">
+            <h4>Kiến trúc cô lập</h4>
+            <ul>
+                <li>Mỗi mô hình được thiết kế <strong>"đo ni đóng giày"</strong> cho một tác vụ duy nhất.</li>
+                <li>Không có khả năng thích ứng hoặc tái sử dụng kiến thức đã học.</li>
+                <li>Tri thức từ tác vụ A không giúp ích cho tác vụ B.</li>
+                <li>Chi phí nghiên cứu và phát triển <strong>tăng tuyến tính</strong> theo số bài toán.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        Nếu có một mô hình "biết ngôn ngữ" từ dữ liệu thô, ta chỉ cần một lượng nhãn nhỏ để thích ứng cho từng tác vụ.
+    </div>
+</section>
+
+<!-- SLIDE 2.2: Mục tiêu -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">2.2 &middot; Mục tiêu cụ thể</div>
+    <h3>Ba Mục Tiêu Cụ Thể Của Bài Báo</h3>
+    <p class="slide-def">Bài báo hướng đến một phương pháp tổng quát, có khả năng tận dụng dữ liệu thô và tái sử dụng kiến thức qua nhiều tác vụ.</p>
+
+    <div class="g-grid-3">
+        <div class="g-card g-emerald">
+            <h4>1. Tận dụng dữ liệu thô</h4>
+            <p>Chuyển từ "cần nhãn để học" sang <strong>học biểu diễn chất lượng cao từ văn bản không nhãn</strong> trên Internet.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>2. Hiện thực hoá Transfer Learning</h4>
+            <p>Khai thác tri thức nền tảng từ pre-training để áp dụng hiệu quả cho <strong>nhiều tác vụ đích</strong> với rất ít nhãn.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>3. Tối ưu kiến trúc &amp; hiệu suất</h4>
+            <p>Nâng cao kết quả trên nhiều bài toán NLP (QA, NLI, phân loại…) mà <strong>không phải thiết kế lại</strong> mạng neuron.</p>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        Tóm lại: <strong>một mô hình tổng quát, nhiều tác vụ, ít kỹ thuật phải đẻ ra mỗi lần gặp bài toán mới.</strong>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 3: GPT Framework
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 3.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">3.</div>
+    <div class="section-title">GPT FRAMEWORK</div>
+    <div class="section-subtitle">Kiến trúc và hàm mục tiêu<br>cho cả tiền huấn luyện lẫn tinh chỉnh.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">3.1 Unsupervised Pre-training</span><span class="arrow">→</span>
+        <span class="box">3.2 Supervised Fine-tuning</span><span class="arrow">→</span>
+        <span class="box">3.3 Auxiliary Objective</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 3.1: Pre-training không giám sát -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.1 &middot; Unsupervised Pre-training</div>
+    <h3>Tiền Huấn Luyện Không Giám Sát</h3>
+    <p class="slide-def">Mô hình học cấu trúc ngôn ngữ bằng nhiệm vụ cốt lõi: nhìn các từ đi trước để dự đoán từ tiếp theo trên tập văn bản thô $U = \{u_1, \ldots, u_n\}$.</p>
+
+    <div class="g-formula">
+        $$L_1(\mathcal{U}) = \sum_{i} \log P(u_i \mid u_{i-k}, \ldots, u_{i-1}; \Theta)$$
+    </div>
+    <p style="font-size:0.5em; color: var(--c-muted); text-align:center; margin-top:-4px;">Trong đó $k$ là kích thước cửa sổ ngữ cảnh, $\Theta$ là tham số mạng neuron.</p>
+
+    <div class="g-stepper">
+        <div class="g-step">
+            <span class="g-step-num">1</span>
+            <h4>Nhúng dữ liệu</h4>
+            <p>Biến đổi chuỗi từ đầu vào thành vector bằng cộng token embedding ($W_e$) và position embedding ($W_p$).</p>
+            <div class="g-mini-formula">$h_0 = U W_e + W_p$</div>
+        </div>
+        <div class="g-step">
+            <span class="g-step-num">2</span>
+            <h4>Xử lý qua Decoder</h4>
+            <p>Đẩy vector qua $n$ tầng Transformer Decoder với multi-head self-attention để học quan hệ giữa các từ.</p>
+            <div class="g-mini-formula">$h_l = \text{transformer\_block}(h_{l-1})$</div>
+        </div>
+        <div class="g-step">
+            <span class="g-step-num">3</span>
+            <h4>Dự đoán từ tiếp theo</h4>
+            <p>Dùng softmax trên vector trạng thái cuối $h_n$ để tính phân phối xác suất và chọn từ tiếp theo phù hợp nhất.</p>
+            <div class="g-mini-formula">$P(u) = \text{softmax}(h_n W_e^\top)$</div>
+        </div>
+    </div>
+
+    <div class="image-block tall">
+        <img src="assets/decoder_block.png" alt="Kiến trúc Transformer Decoder">
+        <div class="image-caption">Kiến trúc Transformer Decoder được GPT-1 sử dụng làm khối xử lý cốt lõi.</div>
+    </div>
+</section>
+
+<!-- SLIDE 3.2: Tinh chỉnh có giám sát -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.2 &middot; Supervised Fine-tuning</div>
+    <h3>Tinh Chỉnh Có Giám Sát</h3>
+    <p class="slide-def">Sau pre-training, mô hình được chuyển sang học tác vụ chuyên biệt bằng tập dữ liệu nhỏ đã gán nhãn $C$ gồm đầu vào $x^1, \ldots, x^m$ và nhãn $y$.</p>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-emerald">
+            <h4>Cơ chế dự đoán</h4>
+            <ul>
+                <li>Chuỗi đầu vào được đưa qua mô hình GPT đã pre-train.</li>
+                <li>Lấy <strong>vector trạng thái tại vị trí từ cuối cùng</strong> $h_m^l$ của tầng Transformer cuối.</li>
+                <li>Đưa qua một <strong>tầng tuyến tính bổ sung</strong> với tham số $W_y$ để dự đoán nhãn.</li>
+                <li>Không cần thay đổi kiến trúc bên trong mô hình.</li>
+            </ul>
+        </div>
+        <div class="col-text g-card g-emerald">
+            <h4>Hàm mục tiêu</h4>
+            <ul>
+                <li>Tối đa hoá log-likelihood của nhãn đúng:</li>
+            </ul>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $L_2(\mathcal{C}) = \sum_{(x,y)} \log P(y \mid x^1, \ldots, x^m)$
+            </div>
+            <ul style="margin-top:0.3em;">
+                <li>Và xác suất dự đoán:</li>
+            </ul>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $P(y \mid x^1, \ldots, x^m) = \text{softmax}(h_m^l W_y)$
+            </div>
+        </div>
+    </div>
+
+    <div class="callout-weak">
+        <strong style="color: var(--c-weak);">Rủi ro:</strong> nếu chỉ tối ưu $L_2$ trên tập nhãn nhỏ, mô hình dễ bị overfitting.
+    </div>
+</section>
+
+<!-- SLIDE 3.3: Auxiliary objective -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.3 &middot; Auxiliary Objective</div>
+    <h3>Mục Tiêu Phụ Trợ: Kết Hợp $L_2$ và $L_1$</h3>
+    <p class="slide-def">Để khắc phục overfitting, các tác giả giữ lại nhiệm vụ dự đoán từ tiếp theo ($L_1$) làm nhiệm vụ phụ trợ ngay trong giai đoạn fine-tuning.</p>
+
+    <div class="g-formula">
+        $$L_3(\mathcal{C}) = L_2(\mathcal{C}) + \lambda \cdot L_1(\mathcal{C})$$
+    </div>
+    <p style="font-size:0.55em; color: var(--c-muted); text-align:center; margin-top:-2px;">Trong đó $\lambda$ là trọng số cân bằng hai mục tiêu.</p>
+
+    <div class="g-grid-2">
+        <div class="g-card g-emerald">
+            <h4>Lợi ích 1 — Generalization tốt hơn</h4>
+            <p>Nhiệm vụ phụ trợ buộc mô hình <strong>tiếp tục học cấu trúc ngôn ngữ</strong>, không chỉ ghi nhớ nhãn của tập nhỏ. Nhờ đó, biểu diễn thu được tổng quát hơn trên dữ liệu mới.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>Lợi ích 2 — Hội tụ nhanh hơn</h4>
+            <p>Gradient từ $L_1$ cung cấp thêm tín hiệu ổn định, giúp mô hình <strong>hội tụ nhanh hơn</strong> khi fine-tuning với dữ liệu nhãn hạn chế.</p>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        <strong>Bài học:</strong> đừng vứt bỏ hoàn toàn mục tiêu pre-training khi fine-tuning — đôi khi chính nó giúp mô hình tổng quát hoá tốt hơn.
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 4: Task-specific Input & Kết quả
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 4.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">4.</div>
+    <div class="section-title">TASK-SPECIFIC &amp; KẾT QUẢ</div>
+    <div class="section-subtitle">Làm phẳng mọi đầu vào thành chuỗi duy nhất<br>và đánh giá trên 4 nhóm tác vụ NLP.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">NLI</span><span class="arrow">→</span>
+        <span class="box">QA &amp; Commonsense</span><span class="arrow">→</span>
+        <span class="box">Similarity</span><span class="arrow">→</span>
+        <span class="box">Classification</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 4.1: Tổng quan input transformation -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">4.0 &middot; Tổng quan</div>
+    <h3>Làm Phẳng Mọi Đầu Vào Thành Một Chuỗi</h3>
+    <p class="slide-def">Để áp dụng cho nhiều tác vụ mà không thay đổi kiến trúc, GPT-1 chuyển mọi đầu vào phức tạp thành một chuỗi duy nhất, phân tách bằng các token đặc biệt.</p>
+
+    <div class="g-token-line">
+        <span class="g-token start">&lt;s&gt;</span>
+        <span class="g-token" style="background:#f7f6f2;">Start of sequence</span>
+        <span class="g-token sep">\$</span>
+        <span class="g-token" style="background:#f7f6f2;">Separator</span>
+        <span class="g-token end">&lt;e&gt;</span>
+        <span class="g-token" style="background:#f7f6f2;">End of sequence</span>
+    </div>
+
+    <div class="image-block full">
+        <img src="assets/decoder_task_input.png" alt="Các biến đổi đầu vào cho từng tác vụ">
+        <div class="image-caption">Bốn kiểu biến đổi đầu vào cho NLI, QA, Similarity và Classification.</div>
+    </div>
+
+    <div class="g-verdict">
+        <strong>Ý tưởng:</strong> biến mọi cấu trúc (cặp câu, ngữ cảnh + câu hỏi, văn bản đơn) về cùng một dạng — <em>chuỗi token kèm marker</em>.
+    </div>
+</section>
+
+<!-- SLIDE 4.2: NLI -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">4.1 &middot; NLI</div>
+    <h3>Suy Luận Hệ Quả (Natural Language Inference)</h3>
+    <p class="slide-def">Nối tiền đề $p$ và giả thuyết $h$ lại với nhau, ngăn cách bằng token phân tách <code>\$</code>.</p>
+
+    <div class="g-formula">
+        $$[\, \langle s \rangle ; \; p \; ; \; \$ \; ; \; h \; ; \; \langle e \rangle \,]$$
+    </div>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-slate">
+            <h4>Ví dụ</h4>
+            <ul>
+                <li><strong>Tiền đề ($p$):</strong> "Đêm nay trời đổ mưa rất to."</li>
+                <li><strong>Giả thuyết ($h$):</strong> "Đường phố có thể bị ngập."</li>
+                <li><strong>Đầu vào:</strong></li>
+            </ul>
+            <div class="g-code"><span class="t-start">&lt;s&gt;</span> ; Đêm nay trời đổ mưa rất to. ; <span class="t-sep">\$</span> ; Đường phố có thể bị ngập. ; <span class="t-end">&lt;e&gt;</span></div>
+        </div>
+        <div class="col-text">
+            <h4 style="color: var(--c-accent); font-family: var(--font-display); font-size: 0.95em; margin-bottom: 0.4em;">Benchmark</h4>
+            <div class="g-dataset-list">
+                <div class="g-dataset">
+                    <b>MNLI (Multi-Genre NLI):</b> 433k cặp câu từ 10 miền văn bản (nói, báo chí, hư cấu…). Hai tập test: <em>Matched</em> (cùng miền) và <em>Mismatched</em> (khác miền).
+                </div>
+                <div class="g-dataset">
+                    <b>RTE (Recognizing Textual Entailment):</b> tập nhỏ vài nghìn mẫu trích từ các cuộc thi NLP thường niên — kiểm thử suy luận trên dữ liệu khan hiếm.
+                </div>
+                <div class="g-dataset">
+                    <b>QNLI (Question NLI):</b> suy luận nhị phân chuyển đổi từ SQuAD v1.1 — xác định đoạn văn có chứa câu trả lời cho câu hỏi hay không.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-block">
+        <img src="assets/NLI_result.png" alt="Kết quả thực nghiệm trên NLI">
+        <div class="image-caption">Kết quả GPT-1 trên các benchmark NLI so với các mô hình trước đó.</div>
+    </div>
+</section>
+
+<!-- SLIDE 4.3: QA & Commonsense -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">4.2 &middot; QA &amp; Commonsense</div>
+    <h3>Trả Lời Câu Hỏi &amp; Suy Luận Thực Tế</h3>
+    <p class="slide-def">Nối ngữ cảnh $z$ và câu hỏi $q$ với <strong>từng câu trả lời ứng viên $a_k$ độc lập</strong>; chọn ứng viên có xác suất cao nhất.</p>
+
+    <div class="g-formula">
+        $$[\, \langle s \rangle ; \; z \; ; \; q \; ; \; \$ \; ; \; a_k \; ; \; \langle e \rangle \,]$$
+    </div>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-slate">
+            <h4>Ví dụ</h4>
+            <ul>
+                <li><strong>Ngữ cảnh ($z$):</strong> "Hải là một sinh viên CNTT."</li>
+                <li><strong>Câu hỏi ($q$):</strong> "Hải dùng gì để lập trình?"</li>
+                <li><strong>Ứng viên:</strong> $a_1$ = "Laptop", $a_2$ = "Máy hút bụi".</li>
+                <li><strong>Chuỗi cho $a_1$:</strong></li>
+            </ul>
+            <div class="g-code"><span class="t-start">&lt;s&gt;</span> ; Hải là một sinh viên CNTT. ; Hải dùng gì để lập trình? ; <span class="t-sep">\$</span> ; <span class="t-text">Laptop</span> ; <span class="t-end">&lt;e&gt;</span></div>
+        </div>
+        <div class="col-text">
+            <h4 style="color: var(--c-accent); font-family: var(--font-display); font-size: 0.95em; margin-bottom: 0.4em;">Benchmark</h4>
+            <div class="g-dataset-list">
+                <div class="g-dataset">
+                    <b>RACE (Reading Comprehension):</b> 28k bài đọc &amp; gần 100k câu hỏi trích từ đề thi tiếng Anh THCS/THPT Trung Quốc — đòi hỏi suy luận logic cao.
+                </div>
+                <div class="g-dataset">
+                    <b>Story Cloze Test:</b> câu chuyện ngắn 4 câu; mô hình phải chọn câu thứ 5 hợp lý nhất trong 2 phương án cho sẵn.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-block">
+        <img src="assets/QA_commonsense_reasoning_result.png" alt="Kết quả thực nghiệm trên QA và Commonsense">
+        <div class="image-caption">Kết quả GPT-1 trên RACE và Story Cloze — vượt nhiều baseline cùng thời.</div>
+    </div>
+</section>
+
+<!-- SLIDE 4.4: Similarity + Classification -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">4.3 &middot; Similarity &amp; Classification</div>
+    <h3>Tương Đồng Ngữ Nghĩa &amp; Phân Loại Văn Bản</h3>
+    <p class="slide-def">Hai nhóm tác vụ còn lại dùng biến đổi đầu vào tối giản: tương đồng tạo <em>hai chuỗi đảo vị trí</em>, phân loại chỉ cần <em>một chuỗi đơn</em>.</p>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-emerald">
+            <h4>Semantic Similarity</h4>
+            <p style="font-size:0.5em; color: var(--c-muted); margin-top:0;">Tạo hai chuỗi đảo vị trí rồi cộng element-wise:</p>
+            <div class="g-formula-strip"><strong>Chuỗi 1:</strong> $[\langle s\rangle; \text{Text}_1; \$; \text{Text}_2; \langle e\rangle]$</div>
+            <div class="g-dataset-list" style="margin-top:0.6em;">
+                <div class="g-dataset"><b>MRPC:</b> 5.8k cặp câu từ tin tức — phân loại nhị phân paraphrase/không paraphrase.</div>
+                <div class="g-dataset"><b>STS-B:</b> 8.6k cặp câu từ tiêu đề, caption, diễn đàn — đo tương đồng liên tục 1–5 bằng hệ số Pearson.</div>
+            </div>
+        </div>
+        <div class="col-text g-card g-emerald">
+            <h4>Text Classification</h4>
+            <p style="font-size:0.5em; color: var(--c-muted); margin-top:0;">Đơn giản nhất — chỉ cần bọc văn bản giữa hai token đặc biệt:</p>
+            <div class="g-formula-strip"><strong>Mẫu:</strong> $[\langle s\rangle; \text{Văn bản}; \langle e\rangle]$</div>
+            <div class="g-dataset-list" style="margin-top:0.6em;">
+                <div class="g-dataset"><b>CoLA:</b> 10.6k câu tiếng Anh — phân loại nhị phân câu đúng ngữ pháp hay không.</div>
+                <div class="g-dataset"><b>SST-2:</b> nhận xét phim ngắn — phân loại nhị phân tích cực/tiêu cực.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-block">
+        <img src="assets/semantic_similarity_classification_result.png" alt="Kết quả Similarity + Classification">
+        <div class="image-caption">Kết quả GPT-1 trên Similarity (MRPC, STS-B) và Classification (CoLA, SST-2).</div>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 5: Phân tích thực nghiệm
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 5.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">5.</div>
+    <div class="section-title">PHÂN TÍCH THỰC NGHIỆM</div>
+    <div class="section-subtitle">Số tầng chuyển giao, zero-shot,<br>và ablation study.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">Số tầng &amp; Zero-shot</span><span class="arrow">→</span>
+        <span class="box">Ablation Study</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 5.1: Số tầng chuyển giao + Zero-shot -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">5.1 &middot; Phân tích số tầng &amp; zero-shot</div>
+    <h3>Hiệu Suất Tăng Theo Số Tầng &amp; Zero-Shot</h3>
+    <p class="slide-def">Hai quan sát quan trọng: nhiều tầng Transformer được chuyển giao → hiệu suất càng cao; và mô hình đã có khả năng zero-shot ngay từ pre-training.</p>
+
+    <div class="g-grid-2">
+        <div class="g-card g-emerald">
+            <h4>Số tầng chuyển giao</h4>
+            <p>Hiệu suất trên các tác vụ downstream <strong>tăng tỉ lệ thuận</strong> với số tầng Transformer được tái sử dụng từ giai đoạn pre-training.</p>
+            <p style="margin-top:0.4em;">→ Càng tận dụng nhiều tầng đã học, mô hình càng hiểu sâu cấu trúc ngôn ngữ.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>Năng lực Zero-Shot</h4>
+            <p>Ngay trong giai đoạn pre-training không giám sát, mô hình <strong>tự phát triển khả năng</strong> giải quyết một số tác vụ cơ bản mà không cần fine-tuning.</p>
+            <p style="margin-top:0.4em;">→ Đây là dấu hiệu sớm cho thấy LLM có thể "hiểu" ngôn ngữ mà không cần nhãn.</p>
+        </div>
+    </div>
+
+    <div class="image-block">
+        <img src="assets/Analysis.png" alt="Phân tích số tầng và zero-shot">
+        <div class="image-caption">Phân tích: hiệu suất tăng theo số tầng chuyển giao &amp; khả năng zero-shot xuất hiện sớm.</div>
+    </div>
+
+    <div class="g-verdict">
+        <strong>Hệ quả:</strong> pre-training không chỉ tạo nền tảng — nó đã bắt đầu "làm bài" được, dù chưa được dạy cụ thể.
+    </div>
+</section>
+
+<!-- SLIDE 5.2: Ablation study -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">5.2 &middot; Ablation Study</div>
+    <h3>Ablation Study: Các Thành Phần Quan Trọng</h3>
+    <p class="slide-def">Hai thí nghiệm đối chứng cho thấy: bỏ auxiliary loss hay thay Transformer bằng LSTM đều làm giảm hiệu suất rõ rệt.</p>
+
+    <div class="g-grid-2">
+        <div class="g-card g-amber">
+            <h4>Bỏ $L_1$ (auxiliary loss)</h4>
+            <p>Khi không giữ mục tiêu dự đoán từ tiếp theo trong fine-tuning, hiệu suất <strong>giảm đáng kể</strong> trên các tác vụ phức tạp — đặc biệt là các tác vụ cần hiểu ngữ cảnh sâu.</p>
+        </div>
+        <div class="g-card g-amber">
+            <h4>Transformer vs LSTM</h4>
+            <p>Thay kiến trúc Transformer bằng LSTM làm giảm trung bình <strong>5.6 điểm</strong> trên các benchmark, do LSTM học ngữ cảnh tầm xa kém hơn.</p>
+        </div>
+    </div>
+
+    <div class="image-block">
+        <img src="assets/ablation_study.png" alt="Ablation study">
+        <div class="image-caption">Ablation: bỏ $L_1$ và thay LSTM đều làm giảm hiệu suất đáng kể.</div>
+    </div>
+
+    <div class="g-verdict">
+        Cả <strong>auxiliary objective</strong> lẫn <strong>kiến trúc Transformer</strong> đều là những lựa chọn có chủ đích, không thể thay thế tuỳ tiện.
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 6: Kết luận
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 6.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">6.</div>
+    <div class="section-title">KẾT LUẬN</div>
+    <div class="section-subtitle">GPT-1 đặt nền móng<br>cho kỷ nguyên mô hình ngôn ngữ lớn.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">Pre-training</span><span class="arrow">+</span>
+        <span class="box">Transformer</span><span class="arrow">+</span>
+        <span class="box">Fine-tuning</span><span class="arrow">=</span>
+        <span class="box" style="border-color: var(--c-accent); color: var(--c-accent);">Nền tảng LLM</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 6.1: Kết luận -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">6.1 &middot; Kết luận</div>
+    <h3>GPT-1 — Viên Gạch Đầu Tiên Của LLM</h3>
+    <p class="slide-def">Tổng kết lại ba yếu tố làm nên thành công của GPT-1 và vì sao nó là khởi đầu của kỷ nguyên mô hình ngôn ngữ lớn.</p>
+
+    <div class="g-grid-3">
+        <div class="g-card g-emerald">
+            <h4>1. Pre-training</h4>
+            <p>Tiền huấn luyện không giám sát trên dữ liệu thô giúp mô hình học được <strong>biểu diễn ngôn ngữ tổng quát</strong> — nền tảng cho mọi tác vụ phía sau.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>2. Transformer</h4>
+            <p>Kiến trúc self-attention cho phép học <strong>phụ thuộc tầm xa</strong> hiệu quả và huấn luyện song song — phù hợp với dữ liệu và mô hình ngày càng lớn.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>3. Fine-tuning</h4>
+            <p>Chỉ cần một tầng tuyến tính và tập nhãn nhỏ để thích ứng cho <strong>nhiều tác vụ NLP khác nhau</strong>, không phải thiết kế lại mô hình.</p>
+        </div>
+    </div>
+
+    <div class="g-quote">
+        "GPT-1 đã đặt nền móng cho kỷ nguyên của các mô hình ngôn ngữ lớn (LLMs) bằng cách chứng minh rằng việc tiền huấn luyện trên dữ liệu khổng lồ, kết hợp với kiến trúc Transformer và tinh chỉnh có giám sát, có thể tạo ra một hệ thống hiểu ngôn ngữ tổng quát mạnh mẽ vượt xa các mô hình chuyên biệt trước đó."
+        <span class="sig">— Tổng hợp từ bài báo GPT-1 (Radford et al., OpenAI, 2018)</span>
+    </div>
+
+    <div class="g-flow">
+        <div class="box">GPT-1 (2018)</div>
+        <div class="arrow">→</div>
+        <div class="box">GPT-2 (2019)</div>
+        <div class="arrow">→</div>
+        <div class="box">GPT-3 (2020)</div>
+        <div class="arrow">→</div>
+        <div class="box" style="border-color: var(--c-accent); color: var(--c-accent);">Modern LLMs</div>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     END OF SLIDES
+     ================================================================ -->
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/notes/notes.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/math/math.min.js"></script>
+
+    <script>
+        Reveal.initialize({
+            hash: true,
+            controls: true,
+            progress: true,
+            center: true,
+            transition: 'slide',
+            backgroundTransition: 'fade',
+            width: 1400,
+            height: 800,
+            margin: 0.05,
+            minScale: 0.2,
+            maxScale: 1.2,
+            plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.MathJax3 ]
+        });
+    </script>
+</body>
+</html>

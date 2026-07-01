@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HAD — Hallucination-Aware Diffusion Priors for 3D Reconstruction</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/white.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/monokai.min.css">
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                tags: 'none'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+    <style>
+        /* ===========================================
+           HAD — Visual identity
+           Accent: deep blue #2d5aa0 (3D reconstruction)
+           Background: warm white #fdfaf5
+           =========================================== */
+        :root {
+            --c-text: #1a1c2e;
+            --c-muted: #5a6072;
+            --c-accent: #2d5aa0;
+            --c-accent-soft: #4a7cc4;
+            --c-warm: #d45d14;
+            --c-good: #1e6b4e;
+            --c-weak: #9b4d0e;
+            --c-bg-soft: #f0f2f6;
+            --c-border: #d4d7de;
+            --c-row-hl: #e8edf5;
+            --c-panel-bg: rgba(255, 255, 255, 0.82);
+            --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+            --font-body: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+        }
+
+        .reveal {
+            font-family: var(--font-body);
+            color: var(--c-text);
+        }
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: -0.01em;
+            color: var(--c-text);
+        }
+        .reveal h1 { font-size: 2.8em; }
+        .reveal h2 { font-size: 2.0em; }
+        .reveal h3 { font-size: 1.5em; }
+        .reveal h4 { font-size: 1.2em; }
+
+        .reveal .slides > section > section { padding: 30px 40px; }
+
+        /* ===========================================
+           Title slide
+           =========================================== */
+        .title-slide {
+            position: relative;
+            overflow: hidden;
+        }
+        .title-slide::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 25% 20%, rgba(45,90,160,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 75% 75%, rgba(212,93,20,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(45,90,160,0.04) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        .title-slide .title-content {
+            position: relative;
+            z-index: 1;
+        }
+        .title-slide .paper-title {
+            font-family: var(--font-display);
+            font-size: 1.3em;
+            font-weight: 500;
+            color: var(--c-muted);
+            font-style: italic;
+            margin-top: 0.6em;
+            line-height: 1.35;
+        }
+        .title-slide .paper-author {
+            font-size: 0.7em;
+            color: var(--c-muted);
+            margin-top: 1.4em;
+            letter-spacing: 0.04em;
+        }
+        .title-slide .subtitle-line {
+            font-size: 0.65em;
+            color: var(--c-muted);
+            margin-top: 0.8em;
+            font-style: italic;
+        }
+        .title-slide .big-gpt {
+            font-family: var(--font-display);
+            font-size: 3.0em;
+            font-weight: 700;
+            color: var(--c-accent);
+            letter-spacing: -0.02em;
+            line-height: 1;
+            margin-bottom: 0.1em;
+        }
+        .title-slide .year-tag {
+            display: inline-block;
+            margin-top: 1.2em;
+            padding: 4px 14px;
+            border: 1px solid var(--c-accent);
+            border-radius: 999px;
+            color: var(--c-accent);
+            font-size: 0.55em;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+
+        /* ===========================================
+           Section divider
+           =========================================== */
+        .section-divider {
+            position: relative;
+        }
+        .section-divider .section-num {
+            font-family: var(--font-display);
+            font-size: 4em;
+            font-weight: 700;
+            color: var(--c-accent);
+            opacity: 0.15;
+            line-height: 1;
+            margin-bottom: -0.3em;
+        }
+        .section-divider .section-title {
+            font-family: var(--font-display);
+            font-size: 2em;
+            font-weight: 600;
+            color: var(--c-text);
+        }
+        .section-divider .section-subtitle {
+            font-size: 0.9em;
+            color: var(--c-muted);
+            margin-top: 0.5em;
+            font-style: italic;
+            max-width: 620px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .section-divider .section-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 1.6em;
+            font-size: 0.5em;
+            color: var(--c-muted);
+        }
+        .section-divider .section-flow .box {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: var(--c-bg-soft);
+            padding: 8px 14px;
+            font-weight: 600;
+        }
+        .section-divider .section-flow .arrow {
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* ===========================================
+           Table of contents
+           =========================================== */
+        .toc {
+            text-align: left;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+        .toc h3 {
+            margin-bottom: 0.7em;
+        }
+        .toc-item {
+            display: flex;
+            align-items: baseline;
+            padding: 0.5em 0;
+            border-bottom: 1px solid var(--c-border);
+            font-size: 0.85em;
+        }
+        .toc-item .toc-num {
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--c-muted);
+            width: 2.2em;
+            flex-shrink: 0;
+        }
+        .toc-item .toc-label {
+            flex: 1;
+        }
+        .toc-item .toc-tag {
+            font-size: 0.75em;
+            color: var(--c-muted);
+            font-style: italic;
+        }
+
+        /* ===========================================
+           Generic helpers
+           =========================================== */
+        .key-point {
+            margin-top: 1em;
+            padding: 0.6em 1em;
+            background: var(--c-row-hl);
+            border-left: 3px solid var(--c-accent);
+            font-size: 0.72em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            box-sizing: border-box;
+        }
+        .callout-good {
+            padding: 0.5em 0.9em;
+            background: #ecfdf5;
+            border-left: 3px solid var(--c-good);
+            font-size: 0.68em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            color: var(--c-good);
+            box-sizing: border-box;
+        }
+        .callout-weak {
+            padding: 0.5em 0.9em;
+            background: #fffbeb;
+            border-left: 3px solid var(--c-weak);
+            font-size: 0.68em;
+            text-align: left;
+            border-radius: 0 4px 4px 0;
+            color: var(--c-weak);
+            box-sizing: border-box;
+        }
+        .slide-def {
+            font-size: 0.72em;
+            color: var(--c-muted);
+            max-width: 800px;
+            margin: 0 auto 0.6em;
+            line-height: 1.45;
+        }
+        .slide-label {
+            font-size: 0.55em;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* Alignment rules for content slides inside vertical stacks */
+        .aligned-stack > section:not(.section-divider) .slide-label,
+        .aligned-stack > section:not(.section-divider) h3,
+        .aligned-stack > section:not(.section-divider) .slide-def,
+        .aligned-stack > section:not(.section-divider) .key-point,
+        .aligned-stack > section:not(.section-divider) .infobox,
+        .aligned-stack > section:not(.section-divider) .note-box,
+        .aligned-stack > section:not(.section-divider) .image-block,
+        .aligned-stack > section:not(.section-divider) .callout-good,
+        .aligned-stack > section:not(.section-divider) .callout-weak {
+            width: min(1000px, 100%);
+            max-width: min(1000px, 100%);
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .aligned-stack > section:not(.section-divider) h3 {
+            margin-top: 0;
+            margin-bottom: 0.3em;
+        }
+
+        /* ===========================================
+           Vertical nav hint
+           =========================================== */
+        .nav-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: var(--c-border);
+            animation: pulse-arrow 2.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes pulse-arrow {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 0.9; transform: translateX(-50%) translateY(4px); }
+        }
+
+        /* ===========================================
+           Image blocks
+           =========================================== */
+        .image-block {
+            text-align: center;
+            margin: 0.6em auto 0.4em;
+        }
+        .image-block img {
+            max-width: min(960px, 100%);
+            max-height: 360px;
+            height: auto;
+            display: inline-block;
+            border-radius: 6px;
+        }
+        .image-block.full img {
+            max-width: min(1100px, 100%);
+            max-height: 520px;
+        }
+        .image-block.tall img {
+            max-width: min(720px, 100%);
+            max-height: 460px;
+        }
+        .image-caption {
+            font-size: 0.45em;
+            color: var(--c-muted);
+            font-style: italic;
+            margin-top: 6px;
+        }
+
+        /* ===========================================
+           Cards / grids
+           =========================================== */
+        .g-grid-2, .g-grid-3, .g-grid-4 {
+            display: grid;
+            gap: 16px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto 0;
+            align-items: stretch;
+        }
+        .g-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .g-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .g-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .g-card {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: var(--c-panel-bg);
+            padding: 14px 16px;
+            box-sizing: border-box;
+        }
+        .g-card h4 {
+            margin: 0 0 0.4em;
+            font-size: 0.78em;
+            color: var(--c-accent);
+        }
+        .g-card p, .g-card li {
+            margin: 0.25em 0;
+            font-size: 0.5em;
+            line-height: 1.5;
+            color: var(--c-muted);
+        }
+        .g-card ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+        .g-card strong { color: var(--c-text); }
+
+        .g-emerald { background: #e7f0eb; border-color: #9ec5ad; }
+        .g-amber   { background: #fff2e8; border-color: #deb08f; }
+        .g-violet  { background: #f0ebf7; border-color: #b9a7d2; }
+        .g-slate   { background: #eef0f1; border-color: #b8c0c4; }
+
+        /* ===========================================
+           Flow strip / two-stage visual
+           =========================================== */
+        .g-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: min(1000px, 100%);
+            margin: 0.6em auto;
+            font-size: 0.55em;
+        }
+        .g-flow .box {
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px 16px;
+            font-weight: 700;
+            color: var(--c-text);
+            text-align: center;
+            min-width: 130px;
+        }
+        .g-flow .box.alt { background: var(--c-row-hl); border-color: var(--c-accent-soft); }
+        .g-flow .box.warm { background: #fff2e8; border-color: #deb08f; }
+        .g-flow .arrow { color: var(--c-accent); font-weight: 700; font-size: 1.2em; }
+
+        /* ===========================================
+           Two-column body layout
+           =========================================== */
+        .g-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto 0;
+            text-align: left;
+            align-items: start;
+        }
+        .g-cols .col-text {
+            font-size: 0.6em;
+            line-height: 1.55;
+            color: var(--c-muted);
+        }
+        .g-cols .col-text h4 {
+            font-size: 0.95em;
+            color: var(--c-accent);
+            margin: 0 0 0.4em;
+        }
+        .g-cols .col-text ul {
+            margin: 0.4em 0 0;
+            padding-left: 1.1em;
+        }
+        .g-cols .col-text li { margin-bottom: 0.35em; }
+        .g-cols .col-text strong { color: var(--c-text); }
+
+        /* ===========================================
+           Formula block
+           =========================================== */
+        .g-formula {
+            width: fit-content;
+            max-width: 900px;
+            margin: 0.5em auto;
+            padding: 12px 22px;
+            border: 1px solid #b0c4de;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.7em;
+            color: var(--c-text);
+            text-align: center;
+        }
+        .g-formula-strip {
+            width: min(1000px, 100%);
+            margin: 0.2em auto 0.5em;
+            padding: 10px 16px;
+            border: 1px solid #b0c4de;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 0.55em;
+            text-align: left;
+            color: var(--c-muted);
+            box-sizing: border-box;
+        }
+        .g-formula-strip strong {
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* ===========================================
+           Stepper for 3 processing steps
+           =========================================== */
+        .g-stepper {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto;
+        }
+        .g-step {
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            background: #fff;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            text-align: left;
+            position: relative;
+        }
+        .g-step-num {
+            display: inline-grid;
+            place-items: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--c-accent);
+            color: #fff;
+            font-size: 0.85em;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .g-step h4 {
+            margin: 0 0 4px;
+            font-size: 0.7em;
+            color: var(--c-accent);
+        }
+        .g-step p {
+            margin: 0;
+            font-size: 0.5em;
+            line-height: 1.5;
+            color: var(--c-muted);
+        }
+        .g-step .g-mini-formula {
+            margin-top: 6px;
+            padding: 6px 10px;
+            background: var(--c-bg-soft);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        /* ===========================================
+           Special token chips for input formats
+           =========================================== */
+        .g-token-line {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin: 0.4em auto 0.5em;
+            font-size: 0.55em;
+        }
+        .g-token {
+            border: 1px solid var(--c-border);
+            border-radius: 6px;
+            padding: 6px 11px;
+            background: #fff;
+            font-weight: 700;
+            color: var(--c-text);
+            font-size: 0.95em;
+        }
+        .g-token.start { background: #e7f0eb; border-color: #9ec5ad; color: var(--c-accent); }
+        .g-token.end   { background: #f0ebf7; border-color: #b9a7d2; color: #5b3a9e; }
+        .g-token.sep   { background: #fff2e8; border-color: #deb08f; color: var(--c-warm); }
+        .g-token.text  { background: #f7f6f2; border-color: #d8d4ca; color: var(--c-text); }
+        .g-token.cand  { background: #ecfdf5; border-color: #86efac; color: var(--c-good); }
+
+        /* ===========================================
+           Data tables
+           =========================================== */
+        .g-table {
+            width: min(1000px, 100%);
+            margin: 0.5em auto;
+            border-collapse: collapse;
+            font-size: 0.5em;
+            text-align: left;
+        }
+        .g-table th {
+            background: var(--c-accent);
+            color: #fff;
+            padding: 8px 12px;
+            font-weight: 700;
+        }
+        .g-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--c-border);
+            color: var(--c-muted);
+            vertical-align: top;
+        }
+        .g-table tr.hl td {
+            background: var(--c-row-hl);
+            color: var(--c-text);
+            font-weight: 700;
+        }
+        .g-table td.k { color: var(--c-text); font-weight: 700; }
+
+        /* ===========================================
+           Compare blocks (good vs weak)
+           =========================================== */
+        .g-compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            width: min(1000px, 100%);
+            margin: 0.5em auto;
+            text-align: left;
+        }
+        .g-compare .col {
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+        .g-compare .col h4 {
+            margin: 0 0 0.5em;
+            font-size: 0.85em;
+        }
+        .g-compare .col ul {
+            margin: 0;
+            padding-left: 1.1em;
+        }
+        .g-compare .col li {
+            font-size: 0.55em;
+            line-height: 1.55;
+            margin-bottom: 0.3em;
+        }
+        .g-compare .good { background: #e7f0eb; border: 1px solid #9ec5ad; }
+        .g-compare .good h4 { color: var(--c-accent); }
+        .g-compare .good li { color: var(--c-text); }
+        .g-compare .weak { background: #f4eee5; border: 1px solid #d6c5a3; }
+        .g-compare .weak h4 { color: var(--c-warm); }
+        .g-compare .weak li { color: var(--c-text); }
+
+        /* ===========================================
+           Big number callouts
+           =========================================== */
+        .g-big-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            width: min(900px, 100%);
+            margin: 0.6em auto;
+        }
+        .g-big-stat {
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            background: #fff;
+            padding: 16px 14px;
+            text-align: center;
+        }
+        .g-big-stat .num {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 2.0em;
+            font-weight: 700;
+            color: var(--c-accent);
+            line-height: 1;
+        }
+        .g-big-stat .cap {
+            display: block;
+            font-size: 0.45em;
+            color: var(--c-muted);
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        /* ===========================================
+           Two-stage callout (verdict line)
+           =========================================== */
+        .g-verdict {
+            width: min(1000px, 100%);
+            margin: 0.5em auto 0;
+            border-left: 4px solid var(--c-accent);
+            background: var(--c-row-hl);
+            border-radius: 0 6px 6px 0;
+            padding: 10px 16px;
+            font-size: 0.6em;
+            line-height: 1.5;
+            text-align: left;
+            color: var(--c-text);
+            box-sizing: border-box;
+        }
+        .g-verdict strong { color: var(--c-accent); }
+
+        /* ===========================================
+           Dataset caption blocks
+           =========================================== */
+        .g-dataset {
+            border: 1px solid var(--c-border);
+            border-left: 3px solid var(--c-accent);
+            background: var(--c-bg-soft);
+            border-radius: 0 6px 6px 0;
+            padding: 8px 14px;
+            font-size: 0.5em;
+            line-height: 1.55;
+            color: var(--c-muted);
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .g-dataset b { color: var(--c-accent); }
+
+        .g-dataset-list {
+            display: grid;
+            gap: 10px;
+            width: min(1000px, 100%);
+            margin: 0.4em auto 0;
+        }
+        .g-dataset-list .g-dataset { width: 100%; }
+
+        /* ===========================================
+           Conclusion quote
+           =========================================== */
+        .g-quote {
+            width: min(900px, 100%);
+            margin: 0.8em auto;
+            padding: 22px 28px;
+            border-left: 4px solid var(--c-accent);
+            background: #fff;
+            border-radius: 0 10px 10px 0;
+            font-family: var(--font-display);
+            font-size: 0.95em;
+            font-style: italic;
+            line-height: 1.5;
+            color: var(--c-text);
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .g-quote .sig {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--font-body);
+            font-style: normal;
+            font-size: 0.55em;
+            color: var(--c-muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* ===========================================
+           Code chip for sample input
+           =========================================== */
+        .g-code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.55em;
+            background: #1a2421;
+            color: #d4e8de;
+            padding: 10px 14px;
+            border-radius: 8px;
+            line-height: 1.55;
+            text-align: left;
+            width: fit-content;
+            max-width: min(960px, 100%);
+            margin: 0.3em auto 0.3em;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .g-code .t-start { color: #86efac; font-weight: 700; }
+        .g-code .t-end   { color: #c4b5fd; font-weight: 700; }
+        .g-code .t-sep   { color: #fdba74; font-weight: 700; }
+        .g-code .t-text  { color: #e6f1ea; }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+<!-- ================================================================
+     VERTICAL STACK 0: Title + Table of Contents
+     ================================================================ -->
+<section>
+
+<!-- SLIDE 0.1: Title -->
+<section class="title-slide" data-background-color="#fdfaf5">
+    <div class="title-content">
+        <div class="big-gpt">HAD</div>
+        <div class="paper-title">Hallucination-Aware Diffusion Priors<br>for 3D Reconstruction</div>
+        <div class="paper-author">Tác giả — Paper HAD (2026)</div>
+        <div class="subtitle-line">Sparse-view 3DGS + Diffusion + Bộ chấm điểm bịa ảnh</div>
+        <div class="year-tag">2026</div>
+    </div>
+</section>
+
+<!-- SLIDE 0.2: TOC -->
+<section data-background-color="#fdfaf5">
+    <div class="toc">
+        <div class="slide-label">Mục lục</div>
+        <h3>Nội dung chính</h3>
+        <div class="toc-item">
+            <span class="toc-num">1.</span>
+            <span class="toc-label">Tóm tắt</span>
+            <span class="toc-tag">bối cảnh &amp; giải pháp</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">2.</span>
+            <span class="toc-label">Bài toán</span>
+            <span class="toc-tag">đầu vào, mục tiêu, thách thức</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">3.</span>
+            <span class="toc-label">Methodology</span>
+            <span class="toc-tag">3DGS, Diffusion, HAD pipeline</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">4.</span>
+            <span class="toc-label">Kết quả</span>
+            <span class="toc-tag">DL3DV, MipNeRF360, Ablation</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">5.</span>
+            <span class="toc-label">Hạn chế</span>
+            <span class="toc-tag">phân tích &amp; hướng cải tiến</span>
+        </div>
+        <div class="toc-item">
+            <span class="toc-num">6.</span>
+            <span class="toc-label">Kết luận</span>
+            <span class="toc-tag">hallucination-aware supervision</span>
+        </div>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 1: Tóm tắt
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 1.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">1.</div>
+    <div class="section-title">TÓM TẮT</div>
+    <div class="section-subtitle">3DGS cần nhiều ảnh &bullet; Diffusion sửa ảnh &bullet; Vấn đề chi tiết bịa</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">Bối cảnh</span><span class="arrow">→</span>
+        <span class="box">Giải pháp</span><span class="arrow">→</span>
+        <span class="box">Ý tưởng</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 1.1: Bối cảnh -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">1.1 &middot; Bối cảnh</div>
+    <h3>3DGS + Diffusion: Bài Toán Sparse-View</h3>
+    <p class="slide-def">Khi có ít ảnh đầu vào, 3DGS render ảnh mờ/méo; diffusion (như Difix3D) giúp sửa ảnh render, nhưng có thể sinh chi tiết bịa.</p>
+
+    <div class="g-grid-3">
+        <div class="g-card g-amber">
+            <h4>3DGS cần nhiều ảnh</h4>
+            <p>Ít ảnh → render mờ, méo hình, floaters.</p>
+        </div>
+        <div class="g-card g-amber">
+            <h4>Diffusion sửa ảnh render</h4>
+            <p>Difix3D dùng diffusion sửa ảnh lỗi, rồi dùng ảnh đã sửa làm ảnh bổ sung.</p>
+        </div>
+        <div class="g-card g-amber">
+            <h4>Vấn đề chi tiết bịa</h4>
+            <p>Diffusion tạo chi tiết hợp lý nhưng không tồn tại, không khớp ảnh đầu vào.</p>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        <strong>Vấn đề:</strong> Diffusion có thể bịa — cần cơ chế kiểm soát.
+    </div>
+</section>
+
+<!-- SLIDE 1.2: Giải pháp + Ý tưởng -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">1.2 &middot; Giải pháp cốt lõi</div>
+    <h3>HAD: Hallucination-Aware Supervision</h3>
+    <p class="slide-def">Thay vì ngăn diffusion bịa, HAD dự đoán pixel nào bịa và loại bỏ pixel đó khỏi loss khi train 3DGS.</p>
+
+    <div class="g-flow">
+        <span class="box warm">3DGS render lỗi</span><span class="arrow">→</span>
+        <span class="box warm">Diffusion sửa</span><span class="arrow">→</span>
+        <span class="box alt">Bộ chấm điểm bịa</span><span class="arrow">→</span>
+        <span class="box alt">Mask pixel sai</span><span class="arrow">→</span>
+        <span class="box">Train 3DGS an toàn</span>
+    </div>
+
+    <div class="key-point">
+        <strong>HAD = 3DGS + bộ sửa ảnh diffusion + bộ chấm điểm bịa ảnh.</strong><br>
+        Diffusion tạo ảnh bổ sung. Bộ chấm điểm kiểm tra pixel đáng tin. 3DGS chỉ học phần đáng tin.
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 2: Bài toán
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 2.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">2.</div>
+    <div class="section-title">BÀI TOÁN</div>
+    <div class="section-subtitle">Đầu vào, mục tiêu, khó khăn, và cách HAD đặt lại vấn đề.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">Đầu vào</span><span class="arrow">→</span>
+        <span class="box">Mục tiêu</span><span class="arrow">→</span>
+        <span class="box">Khó khăn</span><span class="arrow">→</span>
+        <span class="box">Đặt lại</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 2.1: Đầu vào & Mục tiêu -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">2.1 &middot; Đầu vào &amp; Mục tiêu</div>
+    <h3>Bài Toán Sparse-View 3D Reconstruction</h3>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-emerald">
+            <h4>Đầu vào</h4>
+            <p>Tập ảnh $P$ = $\{(I_n, C_n)\}$, $N$ ảnh có camera.</p>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $$P = \{(I_n, C_n) \mid n \in \{0, \ldots, N\}\}$$
+            </div>
+        </div>
+        <div class="col-text g-card g-emerald">
+            <h4>Mục tiêu</h4>
+            <p>Train 3DGS $\Phi$ render tốt tại camera đã biết <strong>VÀ</strong> camera mới.</p>
+            <ul>
+                <li>Camera đã biết: ảnh đầu vào có sẵn</li>
+                <li>Camera mới: góc nhìn chưa thấy trong lúc train</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        Mục tiêu kép: vừa tái tạo ảnh đã thấy, vừa sinh ảnh góc nhìn mới chất lượng cao.
+    </div>
+</section>
+
+<!-- SLIDE 2.2: Khó khăn & Cách đặt lại -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">2.2 &middot; Khó khăn &amp; Cách đặt lại</div>
+    <h3>Từ "Sao Diffusion Không Bịa?" → "Pixel Nào Đáng Tin?"</h3>
+
+    <div class="g-compare">
+        <div class="col weak">
+            <h4>Cách cũ</h4>
+            <ul>
+                <li>Làm sao để diffusion không bịa?</li>
+                <li>Khó, diffusion luôn có xác suất sinh chi tiết sai.</li>
+            </ul>
+        </div>
+        <div class="col good">
+            <h4>Cách HAD</h4>
+            <ul>
+                <li>Pixel nào có khả năng là chi tiết bịa?</li>
+                <li>Biến hallucination thành bài toán chấm điểm độ tin cậy từng pixel.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="key-point">
+        Đây là điểm mới chính: HAD biến hallucination thành bài toán <strong>chấm điểm độ tin cậy theo từng pixel.</strong>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 3: Methodology
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 3.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">3.</div>
+    <div class="section-title">METHODOLOGY</div>
+    <div class="section-subtitle">3DGS → Diffusion Prior → Hallucination Scorer → Masked Supervision</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">3DGS</span><span class="arrow">→</span>
+        <span class="box">Diffusion</span><span class="arrow">→</span>
+        <span class="box">Scorer</span><span class="arrow">→</span>
+        <span class="box">Mask</span><span class="arrow">→</span>
+        <span class="box">Train</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 3.1: Preliminary: 3DGS -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.1 &middot; 3D Gaussian Splatting</div>
+    <h3>3DGS: Biểu Diễn Scene &amp; Render Ảnh</h3>
+    <p class="slide-def">Scene được biểu diễn bằng tập Gaussian 3D (tâm $\mu$, kích thước $S$, hướng $R$, độ đục $\delta$, màu $c$). Render màu pixel bằng công thức alpha-blending.</p>
+
+    <div class="g-cols">
+        <div class="col-text g-card">
+            <h4>Gaussian</h4>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $$\{(\mu_i, S_i, R_i, \delta_i, c_i)\}_{i=1}^{N}$$
+            </div>
+        </div>
+        <div class="col-text g-card">
+            <h4>Độ đục</h4>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $$\alpha_i = \delta_i \exp\left[-\frac{1}{2}(x-\mu_i)^\top \Sigma_i^{-1}(x-\mu_i)\right]$$
+            </div>
+        </div>
+    </div>
+
+    <div class="g-formula">
+        <strong>Render màu pixel:</strong>
+        $$C(p) = \sum_{i=1}^{N} c_i \alpha_i \prod_{j=1}^{i-1} (1-\alpha_j)$$
+    </div>
+
+    <div class="callout-good">
+        Gaussian phía trước che nhiều → Gaussian phía sau đóng góp ít. Mỗi Gaussian là "đám mây màu" trong không gian 3D.
+    </div>
+</section>
+
+<!-- SLIDE 3.2: Preliminary: Diffusion -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.2 &middot; Diffusion Prior</div>
+    <h3>Diffusion: Bộ Sửa Ảnh (Không Phải Bộ Sinh Ảnh)</h3>
+    <p class="slide-def">HAD dùng diffusion như bộ sửa ảnh: nhận ảnh render lỗi + ảnh tham chiếu → sinh ảnh đã sửa. KHÔNG dùng diffusion để sinh ảnh từ text.</p>
+
+    <div class="g-stepper">
+        <div class="g-step">
+            <span class="g-step-num">1</span>
+            <h4>Thêm nhiễu</h4>
+            <p>Làm hỏng ảnh sạch bằng nhiễu Gaussian.</p>
+            <div class="g-mini-formula">$$x_\tau = \alpha_\tau x + \sigma_\tau \epsilon$$</div>
+        </div>
+        <div class="g-step">
+            <span class="g-step-num">2</span>
+            <h4>Dự đoán nhiễu</h4>
+            <p>Học mạng $\epsilon_\theta$ để dự đoán nhiễu đã thêm.</p>
+            <div class="g-mini-formula">$$\mathbb{E}[\|\epsilon - \epsilon_\theta(x_\tau; c, \tau)\|_2^2]$$</div>
+        </div>
+        <div class="g-step">
+            <span class="g-step-num">3</span>
+            <h4>Sửa ảnh</h4>
+            <p>Diffusion sửa ảnh render lỗi từ 3DGS.</p>
+            <div class="g-mini-formula">$$\tilde{i}_G = G(R_\Phi(\tilde{c}) \mid i_{ref})$$</div>
+        </div>
+    </div>
+
+    <div class="callout-good">
+        Ảnh render lỗi từ 3DGS → Diffusion sửa → Ảnh bổ sung (có thể chứa chi tiết bịa).
+    </div>
+</section>
+
+<!-- SLIDE 3.3: Loss tổng + Loss đầu vào -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.3 &middot; Loss Functions</div>
+    <h3>Hai Nguồn Supervision: Ảnh Đầu Vào &amp; Ảnh Bổ Sung</h3>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-emerald">
+            <h4>Loss tổng</h4>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $$\arg\min_{\Phi} \lambda_{input} L_{input} + \lambda_{novel} L_{novel}$$
+            </div>
+            <p>Ảnh đầu vào: nguồn đáng tin nhất. Ảnh bổ sung: tăng số góc nhìn, nhưng cần kiểm soát bằng mặt nạ.</p>
+        </div>
+        <div class="col-text g-card g-emerald">
+            <h4>Loss đầu vào</h4>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $$L_{input} = 0.8L_1(R_\Phi(c), i) + 0.2L_{D\text{-}SSIM}(R_\Phi(c), i)$$
+            </div>
+            <p>Render tại camera ảnh thật → so sánh với ảnh thật. Đây là loss 3DGS bình thường.</p>
+        </div>
+    </div>
+</section>
+
+<!-- SLIDE 3.4: Loss ảnh bổ sung (QUAN TRỌNG) -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.4 &middot; Masked Supervision</div>
+    <h3>Loss Ảnh Bổ Sung: Chỉ Học Từ Pixel Đáng Tin</h3>
+    <p class="slide-def">Công thức quan trọng nhất của HAD — mặt nạ $m$ loại bỏ pixel bị đánh dấu là chi tiết bịa khỏi loss.</p>
+
+    <div class="g-formula" style="border-color: var(--c-accent); border-width: 2px;">
+        $$L_{novel} = L_1(\neg m \odot R_\Phi(\tilde{c}), \neg m \odot \tilde{i}) + L_{D\text{-}SSIM}(\neg m \odot R_\Phi(\tilde{c}), \neg m \odot \tilde{i})$$
+    </div>
+
+    <div class="key-point">
+        Nếu $m[p]=1$ → pixel $p$ bị loại. Nếu $m[p]=0$ → pixel $p$ được dùng để train. HAD không cho 3DGS học toàn bộ ảnh diffusion.
+    </div>
+
+    <div class="callout-good">
+        Tập ảnh bổ sung: $$\tilde{P} = \{(M_t, \tilde{I}_t, \tilde{C}_t) \mid t \in \{0, \ldots, T\}\}$$
+    </div>
+</section>
+
+<!-- SLIDE 3.5: Bộ chấm điểm bịa ảnh -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.5 &middot; Hallucination Scorer</div>
+    <h3>Bộ Chấm Điểm Bịa Ảnh: Mạng Dự Đoán Pixel Nào Là Chi Tiết Bịa</h3>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-emerald">
+            <h4>Kiến trúc</h4>
+            <div class="g-formula" style="font-size:0.85em; margin:0.4em auto;">
+                $$s = S_\theta(\tilde{i}_G \mid R_\Phi(\tilde{c}), F_{\tilde{c}})$$
+            </div>
+            <ul>
+                <li>Bộ đọc nhiều ảnh (từ LVSM): $$F_{\tilde{c}} = V(P \mid \tilde{c})$$</li>
+                <li>Nhánh chấm điểm: U-Net nhỏ 3 lớp</li>
+            </ul>
+        </div>
+        <div class="col-text g-card g-amber">
+            <h4>Cách train</h4>
+            <p>Không cần annotate thủ công!</p>
+            <ul>
+                <li>Ground-truth = MAE giữa ảnh diffusion và ảnh thật: $$s^{gt} = \text{MAE}(\tilde{i}_G, I^{gt})$$</li>
+                <li>Loss: $$L_{score} = \|s - s^{gt}\|_2^2$$</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="callout-good">
+        Nếu ảnh diffusion khác ảnh thật nhiều → điểm bịa cao. Gần ảnh thật → điểm bịa thấp.
+    </div>
+</section>
+
+<!-- SLIDE 3.6: Multi-sampling -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.6 &middot; Multi-Sampling</div>
+    <h3>Multi-Sampling: Nhiều Ảnh Diffusion "Tranh Cử" Cho Từng Pixel</h3>
+    <p class="slide-def">Một ảnh tham chiếu có thể không đủ. HAD chọn nhiều ảnh đầu vào làm tham chiếu, tạo nhiều ảnh diffusion, rồi chọn pixel có điểm bịa thấp nhất.</p>
+
+    <div class="g-flow">
+        <span class="box">Ảnh tham chiếu 1</span><span class="arrow">→</span>
+        <span class="box">Diffusion ảnh 1 + score 1</span>
+    </div>
+    <div class="g-flow">
+        <span class="box">Ảnh tham chiếu 2</span><span class="arrow">→</span>
+        <span class="box">Diffusion ảnh 2 + score 2</span>
+    </div>
+    <div class="g-flow">
+        <span class="box">Ảnh tham chiếu K</span><span class="arrow">→</span>
+        <span class="box">Diffusion ảnh K + score K</span>
+    </div>
+    <div class="g-flow">
+        <span class="box alt">ArgMin: chọn pixel ít bịa nhất</span>
+    </div>
+
+    <div class="g-formula">
+        $$\tilde{i}[p] = \tilde{i}^{k^*}_{G}[p], \quad k^* = \arg\min_k s^k[p]$$
+    </div>
+
+    <div class="key-point">
+        ArgMin (chọn pixel ít bịa nhất) tốt hơn weighted average trong ablation.
+    </div>
+</section>
+
+<!-- SLIDE 3.7: Pipeline tổng -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.7 &middot; Toàn Bộ Pipeline</div>
+    <h3>Pipeline HAD: Từ Ảnh Đầu Vào Đến 3DGS Hoàn Thiện</h3>
+
+    <div class="g-code">Input: P = tập ảnh đầu vào có camera
+
+Train 3DGS:
+  1. Lấy ảnh đầu vào i và camera c.
+  2. Render ảnh từ 3DGS: R&#x398;(c)
+  3. Tính loss ảnh đầu vào: Linput
+
+Tạo ảnh bổ sung:
+  4. Chọn camera mới c~
+  5. Render ảnh từ 3DGS: R&#x398;(c~)
+  6. Dùng diffusion sửa ảnh: i~G = G(R&#x398;(c~) | iref)
+  7. Dùng bộ đọc nhiều ảnh: Fc~ = V(P | c~)
+  8. Dùng mạng chấm điểm: s = S&#x398;(i~G | R&#x398;(c~), Fc~)
+  9. Threshold s để tạo mặt nạ m
+  10. Tính loss ảnh bổ sung:
+        chỉ dùng pixel không bị đánh dấu là sai
+
+Update:
+  11. Tối ưu 3DGS bằng:
+        &#x3bb;input Linput + &#x3bb;novel Lnovel</div>
+</section>
+
+<!-- SLIDE 3.8: Reuse & Novelty -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">3.8 &middot; Reuse &amp; Novelty</div>
+    <h3>HAD Reuse Gì? Điểm Mới Ở Đâu?</h3>
+
+    <div class="g-cols">
+        <div class="col-text g-card g-slate">
+            <h4>Thành phần reuse</h4>
+            <ul>
+                <li>3DGS: biểu diễn scene, render ảnh</li>
+                <li>Difix3D: bộ sửa ảnh diffusion</li>
+                <li>LVSM: bộ đọc nhiều ảnh</li>
+                <li>U-Net nhỏ: nhánh dự đoán điểm bịa</li>
+            </ul>
+        </div>
+        <div class="col-text g-card g-emerald">
+            <h4>Điểm mới</h4>
+            <ul>
+                <li>Học điểm bịa ảnh theo từng pixel</li>
+                <li>Dùng điểm để mask ảnh bổ sung</li>
+                <li>Dùng điểm để chọn pixel tốt nhất từ multi-sampling</li>
+                <li>Cho 3DGS học từ ảnh diffusion an toàn hơn</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="g-verdict">
+        <strong>Novelty chính = Hallucination-Aware Supervision:</strong> ảnh bổ sung từ diffusion không còn là teacher tuyệt đối, mà là teacher cần được kiểm tra trước khi dùng.
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 4: Kết quả
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 4.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">4.</div>
+    <div class="section-title">KẾT QUẢ</div>
+    <div class="section-subtitle">DL3DV (9 ảnh) &bullet; MipNeRF360 (cross-domain) &bullet; Ablation Studies</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">DL3DV</span><span class="arrow">→</span>
+        <span class="box">MipNeRF360</span><span class="arrow">→</span>
+        <span class="box">Ablation</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 4.1: DL3DV + MipNeRF360 -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">4.1 &middot; Kết quả chính</div>
+    <h3>HAD Vượt Difix3D Trên Cả Hai Dataset</h3>
+
+    <div class="g-grid-2">
+        <div>
+            <h4 style="font-size:0.65em; margin-bottom:0.2em; color:var(--c-accent);">DL3DV, 9 ảnh</h4>
+            <table class="g-table">
+                <thead>
+                    <tr><th>Method</th><th>PSNR</th><th>SSIM</th><th>LPIPS</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="k">Gsplat-3DGS</td><td>19.004</td><td>0.679</td><td>0.281</td></tr>
+                    <tr><td class="k">Gsplat-MCMC</td><td>20.532</td><td>0.721</td><td>0.225</td></tr>
+                    <tr><td class="k">Difix3D</td><td>21.355</td><td>0.734</td><td>0.199</td></tr>
+                    <tr class="hl"><td class="k">HAD</td><td><strong>22.134</strong></td><td><strong>0.757</strong></td><td><strong>0.190</strong></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <h4 style="font-size:0.65em; margin-bottom:0.2em; color:var(--c-accent);">MipNeRF360, cross-domain</h4>
+            <table class="g-table">
+                <thead>
+                    <tr><th>Method</th><th>PSNR</th><th>SSIM</th><th>LPIPS</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="k">Gsplat-3DGS</td><td>15.748</td><td>0.424</td><td>0.431</td></tr>
+                    <tr><td class="k">FSGS</td><td>17.940</td><td>0.492</td><td>0.468</td></tr>
+                    <tr><td class="k">Difix3D</td><td>18.001</td><td>0.475</td><td>0.350</td></tr>
+                    <tr class="hl"><td class="k">HAD</td><td><strong>18.689</strong></td><td><strong>0.509</strong></td><td><strong>0.334</strong></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="g-big-stats">
+        <div class="g-big-stat">
+            <span class="num">+0.78</span>
+            <span class="cap">dB PSNR trên DL3DV</span>
+        </div>
+        <div class="g-big-stat">
+            <span class="num">+0.69</span>
+            <span class="cap">dB PSNR trên MipNeRF360</span>
+        </div>
+        <div class="g-big-stat">
+            <span class="num">&#8595;</span>
+            <span class="cap">LPIPS giảm trên cả hai dataset</span>
+        </div>
+    </div>
+</section>
+
+<!-- SLIDE 4.2: Ablation 1: từng thành phần -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">4.2 &middot; Ablation Study</div>
+    <h3>Ablation: Từng Thành Phần Đều Có Tác Dụng</h3>
+
+    <table class="g-table">
+        <thead>
+            <tr><th>Variant</th><th>PSNR</th><th>SSIM</th><th>LPIPS</th></tr>
+        </thead>
+        <tbody>
+            <tr><td class="k">Difix3D</td><td>21.355</td><td>0.734</td><td>0.199</td></tr>
+            <tr><td class="k">Difix3D + HAD</td><td>21.779</td><td>0.749</td><td>0.195</td></tr>
+            <tr><td class="k">Difix3D + HAD + Multi-sampling</td><td>21.983</td><td>0.755</td><td>0.195</td></tr>
+            <tr class="hl"><td class="k">HAD full</td><td><strong>22.134</strong></td><td><strong>0.757</strong></td><td><strong>0.190</strong></td></tr>
+        </tbody>
+    </table>
+
+    <div class="callout-good">
+        Thêm scorer → cải thiện rõ. Multi-sampling → cải thiện tiếp. Full model → tốt nhất.
+    </div>
+</section>
+
+<!-- SLIDE 4.3: Ablation 2: bộ chấm điểm -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">4.3 &middot; Ablation — Bộ chấm điểm</div>
+    <h3>Bộ Đọc Nhiều Ảnh (LVSM) Rất Quan Trọng</h3>
+
+    <table class="g-table">
+        <thead>
+            <tr><th>Estimator</th><th style="text-align:right;">MAE &#8595;</th></tr>
+        </thead>
+        <tbody>
+            <tr><td class="k">Retrained Difix3D</td><td style="text-align:right;">0.058</td></tr>
+            <tr><td class="k">HAD không dùng multi-view encoder pretrained</td><td style="text-align:right;">0.054</td></tr>
+            <tr class="hl"><td class="k">HAD full</td><td style="text-align:right;"><strong>0.043</strong></td></tr>
+        </tbody>
+    </table>
+
+    <div class="g-grid-2">
+        <div class="g-card g-amber">
+            <h4>Không có multi-view encoder tốt</h4>
+            <p>Khó phát hiện pixel bịa.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>Diffusion tự chấm điểm</h4>
+            <p>Không tốt bằng dùng multi-view encoder riêng.</p>
+        </div>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 5: Hạn chế
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 5.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">5.</div>
+    <div class="section-title">HẠN CHẾ</div>
+    <div class="section-subtitle">MAE-based ground-truth &bullet; Threshold cứng &bullet; Pixel-level &bullet; Phụ thuộc LVSM &bullet; Chi phí train</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">MAE</span><span class="arrow">→</span>
+        <span class="box">Threshold</span><span class="arrow">→</span>
+        <span class="box">Pixel-level</span><span class="arrow">→</span>
+        <span class="box">LVSM</span><span class="arrow">→</span>
+        <span class="box">Cost</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 5.1: 5 hạn chế -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">5.1 &middot; Hạn chế</div>
+    <h3>5 Hạn Chế Của HAD</h3>
+
+    <div class="g-grid-3">
+        <div class="g-card g-amber">
+            <h4>Điểm bịa học từ MAE</h4>
+            <p>MAE tăng do lệch màu, lệch sáng, sai căn chỉnh, không chỉ do chi tiết bịa.</p>
+        </div>
+        <div class="g-card g-amber">
+            <h4>Mặt nạ threshold cứng</h4>
+            <p>Chia pixel thành dùng/bỏ, chưa tận dụng mức độ tin cậy liên tục. Hướng cải tiến: EDL, uncertainty.</p>
+        </div>
+        <div class="g-card g-amber">
+            <h4>Dừng ở pixel-level</h4>
+            <p>Chưa kiểm soát Gaussian nào gây lỗi. Hướng phát triển: chuyển điểm bịa ảnh sang Gaussian-level.</p>
+        </div>
+    </div>
+    <div class="g-grid-2" style="margin-top:0;">
+        <div class="g-card g-slate">
+            <h4>Phụ thuộc LVSM</h4>
+            <p>Nếu multi-view encoder không tốt, điểm bịa ảnh cũng bị ảnh hưởng.</p>
+        </div>
+        <div class="g-card g-slate">
+            <h4>Chi phí train scorer</h4>
+            <p>10k iterations, batch 2/GPU, ~28 giờ trên 8&times; V100 32GB.</p>
+        </div>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     VERTICAL STACK 6: Kết luận
+     ================================================================ -->
+<section class="aligned-stack">
+
+<!-- SLIDE 6.0: Section divider -->
+<section class="section-divider" data-background-color="#fdfaf5">
+    <div class="section-num">6.</div>
+    <div class="section-title">KẾT LUẬN</div>
+    <div class="section-subtitle">Hallucination-Aware Supervision — lớp kiểm tra giữa diffusion và 3DGS.</div>
+    <div class="section-flow" aria-hidden="true">
+        <span class="box">3DGS</span><span class="arrow">+</span>
+        <span class="box">Diffusion</span><span class="arrow">+</span>
+        <span class="box">Scorer</span><span class="arrow">=</span>
+        <span class="box" style="border-color: var(--c-accent); color: var(--c-accent);">HAD</span>
+    </div>
+    <div class="nav-hint">▼</div>
+</section>
+
+<!-- SLIDE 6.1: Kết luận -->
+<section data-background-color="#fdfaf5">
+    <div class="slide-label">6.1 &middot; Kết luận</div>
+    <h3>HAD — Lớp Kiểm Tra Giữa Diffusion Và 3DGS</h3>
+    <p class="slide-def">HAD không thay diffusion, không thay 3DGS — mà thêm một lớp kiểm tra ở giữa.</p>
+
+    <div class="g-grid-3">
+        <div class="g-card g-emerald">
+            <h4>Biến lỗi thành bản đồ</h4>
+            <p>Lỗi "diffusion bịa" được chuyển thành điểm bịa ảnh theo từng pixel.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>Học an toàn</h4>
+            <p>3DGS chỉ học từ phần đáng tin của ảnh diffusion.</p>
+        </div>
+        <div class="g-card g-emerald">
+            <h4>Hướng hợp lý</h4>
+            <p>Cho sparse-view 3D reconstruction, đây là hướng tiếp cận thực tế và hiệu quả.</p>
+        </div>
+    </div>
+
+    <div class="g-quote">
+        "Novelty chính của paper nằm ở hallucination-aware supervision: ảnh bổ sung từ diffusion không còn là teacher tuyệt đối, mà là teacher cần được kiểm tra trước khi dùng."
+        <span class="sig">— Tổng hợp từ paper HAD (2026)</span>
+    </div>
+
+    <div class="g-flow">
+        <span class="box">3DGS render</span><span class="arrow">→</span>
+        <span class="box">Diffusion sửa</span><span class="arrow">→</span>
+        <span class="box alt">Scorer chấm điểm</span><span class="arrow">→</span>
+        <span class="box alt">Mask pixel sai</span><span class="arrow">→</span>
+        <span class="box">3DGS học an toàn</span>
+    </div>
+</section>
+
+</section>
+
+<!-- ================================================================
+     END OF SLIDES
+     ================================================================ -->
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/notes/notes.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/math/math.min.js"></script>
+
+    <script>
+        Reveal.initialize({
+            hash: true,
+            controls: true,
+            progress: true,
+            center: true,
+            transition: 'slide',
+            backgroundTransition: 'fade',
+            width: 1400,
+            height: 800,
+            margin: 0.05,
+            minScale: 0.2,
+            maxScale: 1.2,
+            plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.MathJax3 ]
+        });
+    </script>
+</body>
+</html>
